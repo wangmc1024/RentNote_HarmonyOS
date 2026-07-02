@@ -1,0 +1,36 @@
+{
+  "routerMap": [
+    {
+      "name": "AddProperty",
+      "pageSourceFile": "src/main/ets/pages/AddPropertyPage.ets",
+      "buildFunction": "AddPropertyBuilder",
+      "data": {
+        "description": "新增/编辑房源页面"
+      }
+    },
+    {
+      "name": "PropertyDetail",
+      "pageSourceFile": "src/main/ets/pages/PropertyDetailPage.ets",
+      "buildFunction": "PropertyDetailBuilder",
+      "data": {
+        "description": "房源详情页面"
+      }
+    },
+    {
+      "name": "Settings",
+      "pageSourceFile": "src/main/ets/pages/SettingsPage.ets",
+      "buildFunction": "SettingsBuilder",
+      "data": {
+        "description": "设置页面"
+      }
+    },
+    {
+      "name": "About",
+      "pageSourceFile": "src/main/ets/pages/AboutPage.ets",
+      "buildFunction": "AboutBuilder",
+      "data": {
+        "description": "关于页面"
+      }
+    }
+  ]
+}

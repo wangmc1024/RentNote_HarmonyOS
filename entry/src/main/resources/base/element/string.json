@@ -1,0 +1,48 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "租房台账 - 华为鸿蒙租房记录元服务"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "租房台账主入口"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "租房台账"
+    },
+    {
+      "name": "app_name",
+      "value": "租房台账"
+    },
+    {
+      "name": "route_AddProperty",
+      "value": "新增房源"
+    },
+    {
+      "name": "route_PropertyDetail",
+      "value": "房源详情"
+    },
+    {
+      "name": "route_Settings",
+      "value": "设置"
+    },
+    {
+      "name": "route_About",
+      "value": "关于"
+    },
+    {
+      "name": "tab_home",
+      "value": "首页"
+    },
+    {
+      "name": "tab_statistics",
+      "value": "统计"
+    },
+    {
+      "name": "tab_my",
+      "value": "我的"
+    }
+  ]
+}
