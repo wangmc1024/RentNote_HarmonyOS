@@ -37,13 +37,17 @@ export struct SettingsPage {
               MenuItemRow({
                 iconName: 'sys.symbol.bell',
                 label: '租约到期提醒',
-                onAction: () => {}
+                onAction: () => {
+                  this.navPathStack.pushPathByName('Reminder', null);
+                }
               })
               Divider().color(Colors.DIVIDER).strokeWidth(0.5).margin({ left: 20, right: 20 })
               MenuItemRow({
                 iconName: 'sys.symbol.bell',
                 label: '通知设置',
-                onAction: () => {}
+                onAction: () => {
+                  this.navPathStack.pushPathByName('Notification', null);
+                }
               })
             }
             .width('100%')
@@ -62,7 +66,9 @@ export struct SettingsPage {
               MenuItemRow({
                 iconName: 'sys.symbol.doc_text',
                 label: '数据管理',
-                onAction: () => {}
+                onAction: () => {
+                  this.navPathStack.pushPathByName('DataManage', null);
+                }
               })
               Divider().color(Colors.DIVIDER).strokeWidth(0.5).margin({ left: 20, right: 20 })
 
@@ -108,13 +114,17 @@ export struct SettingsPage {
               MenuItemRow({
                 iconName: 'sys.symbol.lock',
                 label: '隐私政策',
-                onAction: () => {}
+                onAction: () => {
+                  this.navPathStack.pushPathByName('Privacy', null);
+                }
               })
               Divider().color(Colors.DIVIDER).strokeWidth(0.5).margin({ left: 20, right: 20 })
               MenuItemRow({
                 iconName: 'sys.symbol.doc_text',
                 label: '用户协议',
-                onAction: () => {}
+                onAction: () => {
+                  this.navPathStack.pushPathByName('Agreement', null);
+                }
               })
             }
             .width('100%')

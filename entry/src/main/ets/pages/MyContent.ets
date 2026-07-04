@@ -79,7 +79,7 @@ export struct MyContent {
           // 统计数字行
           Row() {
             Column() {
-              Text(this.viewModel.properties.length.toString())
+              Text(this.viewModel.rentingProperties.length.toString())
                 .fontSize(22)
                 .fontColor(Colors.PRIMARY)
                 .fontFamily(Fonts.NUMBER)
@@ -153,21 +153,27 @@ export struct MyContent {
         // ===== 菜单卡片 1 =====
         Column() {
           MenuItemRow({
-            iconName: 'sys.symbol.arrow_down_doc',
+            iconName: 'sys.symbol.tray_and_arrow_down',
             label: '数据导入',
-            onAction: () => {}
+            onAction: () => {
+              this.navPathStack.pushPathByName('DataImport', null);
+            }
           })
           Divider().color(Colors.DIVIDER_LIGHT).strokeWidth(0.5).margin({ left: 20, right: 20 })
           MenuItemRow({
             iconName: 'sys.symbol.arrow_clockwise',
             label: '数据恢复',
-            onAction: () => {}
+            onAction: () => {
+              this.navPathStack.pushPathByName('DataRestore', null);
+            }
           })
           Divider().color(Colors.DIVIDER_LIGHT).strokeWidth(0.5).margin({ left: 20, right: 20 })
           MenuItemRow({
             iconName: 'sys.symbol.share',
             label: '导出数据',
-            onAction: () => {}
+            onAction: () => {
+              this.navPathStack.pushPathByName('DataExport', null);
+            }
           })
         }
         .width('100%')

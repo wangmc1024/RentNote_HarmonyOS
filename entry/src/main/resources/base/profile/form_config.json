@@ -1,0 +1,23 @@
+{
+  "forms": [
+    {
+      "name": "RentWidget",
+      "displayName": "租房台账",
+      "description": "显示本月租金和到期提醒",
+      "src": "./ets/widget/pages/RentWidgetCard.ets",
+      "uiSyntax": "arkts",
+      "window": {
+        "designWidth": 720,
+        "autoDesignWidth": true
+      },
+      "colorMode": "auto",
+      "isDynamic": true,
+      "isDefault": true,
+      "updateEnabled": true,
+      "scheduledUpdateTime": "10:00",
+      "updateDuration": 1,
+      "defaultDimension": "2*4",
+      "supportDimensions": ["2*4"]
+    }
+  ]
+}

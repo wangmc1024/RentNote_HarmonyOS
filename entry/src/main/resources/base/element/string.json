@@ -43,6 +43,46 @@
     {
       "name": "tab_my",
       "value": "我的"
+    },
+    {
+      "name": "EntryFormAbility_label",
+      "value": "租房台账卡片"
+    },
+    {
+      "name": "EntryFormAbility_desc",
+      "value": "显示本月租金和到期提醒"
+    },
+    {
+      "name": "route_Reminder",
+      "value": "租约到期提醒"
+    },
+    {
+      "name": "route_Notification",
+      "value": "通知设置"
+    },
+    {
+      "name": "route_DataManage",
+      "value": "数据管理"
+    },
+    {
+      "name": "route_DataImport",
+      "value": "数据导入"
+    },
+    {
+      "name": "route_DataRestore",
+      "value": "数据恢复"
+    },
+    {
+      "name": "route_DataExport",
+      "value": "导出数据"
+    },
+    {
+      "name": "route_Privacy",
+      "value": "隐私政策"
+    },
+    {
+      "name": "route_Agreement",
+      "value": "用户协议"
     }
   ]
 }

@@ -1,30 +1,31 @@
-/**
- * 首页视图模型 - 封装首页业务逻辑
- * 从 Repository 获取房源列表、计算到期提醒数和月度总支出
- */
 import { PropertyInfo } from '../model/PropertyModel';
 import { PropertyRepository } from '../repository/PropertyRepository';
-import { AppStorageV2 } from '@kit.ArkUI';
 
 @ObservedV2
 export class HomeViewModel {
-  @Trace properties: PropertyInfo[] = [];
+  @Trace rentingProperties: PropertyInfo[] = [];
+  @Trace candidateProperties: PropertyInfo[] = [];
   @Trace expiringCount: number = 0;
   @Trace totalMonthlyExpense: number = 0;
 
-  private repository: PropertyRepository = AppStorageV2.connect(PropertyRepository)!;
+  private repository: PropertyRepository = PropertyRepository.getInstance();
 
-  /** 加载数据 */
-  loadData(): void {
-    this.properties = this.repository.getAllProperties();
+  async loadData(): Promise<void> {
+    await this.repository.reloadData();
+    this.rentingProperties = this.repository.getRentingProperties();
+    this.candidateProperties = this.repository.getCandidates();
     this.expiringCount = this.repository.getExpiringProperties(30).length;
-    this.totalMonthlyExpense = this.properties
-      .filter((item: PropertyInfo) => item.status === 'renting' || item.status === 'expiring')
+    this.totalMonthlyExpense = this.rentingProperties
       .reduce((sum: number, item: PropertyInfo) => sum + item.monthlyRent, 0);
   }
 
-  /** 刷新数据 */
-  refreshData(): void {
-    this.loadData();
+  async deleteProperty(id: string): Promise<void> {
+    await this.repository.deleteProperty(id);
+    await this.loadData();
+  }
+
+  async promoteCandidate(id: string): Promise<void> {
+    await this.repository.promoteCandidate(id);
+    await this.loadData();
   }
 }

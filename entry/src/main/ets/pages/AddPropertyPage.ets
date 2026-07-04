@@ -6,9 +6,10 @@
  * 统一使用 HeaderBar 组件
  */
 import { Colors, Fonts, FontSizes, Dimensions, Radius, Shadows, Spacing } from '../common/DesignTokens';
+import { promptAction } from '@kit.ArkUI';
 import { HeaderBar } from '../components/HeaderBar';
 import { TagCategory } from '../model/TagModel';
-import { PropertyInfo, PropertyIdParam, SaveResult } from '../model/PropertyModel';
+import { PropertyInfo, PropertyIdParam, SaveResult, DeleteResult } from '../model/PropertyModel';
 import { AddPropertyViewModel } from '../viewmodel/AddPropertyViewModel';
 
 @Builder
@@ -26,22 +27,24 @@ export struct AddPropertyPage {
   @Local startDate: string = '';
   @Local endDate: string = '';
   @Local notes: string = '';
+  @Local renewalStatus: string = '';
   @Local tagCategories: TagCategory[] = [
     new TagCategory('付款方式', Colors.TAG_PAYMENT_BG, Colors.TAG_PAYMENT_TEXT,
-      ['押一付三', '半年付'], [0]),
+      ['押一付三', '半年付'], []),
     new TagCategory('租赁类型', Colors.TAG_LEASE_BG, Colors.TAG_LEASE_TEXT,
-      ['整租', '合租'], [0]),
+      ['整租', '合租'], []),
     new TagCategory('房屋条件', Colors.TAG_CONDITION_BG, Colors.TAG_CONDITION_TEXT,
-      ['精装修', '民水民电', '包物业', '有电梯', '朝南'], [0, 2]),
-    new TagCategory('周边便利', Colors.TAG_SURROUND_BG, Colors.TAG_SURROUND_TEXT,
-      ['近地铁', '可短租', '房东好说话'], [0, 1, 2])
+      ['精装修', '民水民电', '包物业', '有电梯', '朝南', '学区房', '南北通透', '新小区'], []),
+    new TagCategory('其他', Colors.TAG_SURROUND_BG, Colors.TAG_SURROUND_TEXT,
+      ['近地铁', '可短租', '房东好说话', '科技园区'], [])
   ];
   @Local validationError: string = '';
   @Consumer('navPathStack') navPathStack: NavPathStack = new NavPathStack();
+  @Consumer('refreshFlag') refreshFlag: number = 0;
 
   aboutToAppear(): void {
-    // 默认新增模式，onReady 会覆盖为编辑模式（如果有参数）
     this.viewModel.setAddMode();
+    this.viewModel.isCandidateMode = true;
   }
 
   /** 加载编辑房源数据预填充 */
@@ -55,6 +58,7 @@ export struct AddPropertyPage {
       this.startDate = property.startDate;
       this.endDate = property.endDate;
       this.notes = property.notes;
+      this.renewalStatus = property.renewalStatus;
     }
   }
 
@@ -86,20 +90,31 @@ export struct AddPropertyPage {
     property.billsPaid = 0;
     property.imageUrl = '';
     property.notes = this.notes;
+    property.renewalStatus = this.renewalStatus;
 
-    if (this.viewModel.saveProperty(property)) {
-      const result: SaveResult = { saved: true };
-      this.navPathStack.pop({ result: result });
-    } else {
-      this.validationError = this.viewModel.validationError;
-    }
+    this.viewModel.saveProperty(property).then((success: boolean) => {
+      if (success) {
+        promptAction.showToast({
+          message: '保存成功',
+          duration: 2000
+        });
+        const saveResult: SaveResult = new SaveResult();
+        saveResult.saved = true;
+        this.refreshFlag++;
+        this.navPathStack.pop(saveResult);
+      } else {
+        this.validationError = this.viewModel.validationError;
+      }
+    });
   }
 
   build() {
     NavDestination() {
       Column() {
         HeaderBar({
-          title: this.viewModel.isEditMode ? '编辑房源' : '新增房源',
+          title: this.viewModel.isEditMode
+            ? (this.viewModel.isCandidateMode ? '编辑备选' : '编辑房源')
+            : (this.viewModel.isCandidateMode ? '新增备选' : '新增房源'),
           showBack: true,
           onBack: () => {
             this.navPathStack.pop();
@@ -162,18 +177,73 @@ export struct AddPropertyPage {
               .fontWeight(FontWeight.Bold)
               .alignSelf(ItemAlign.Start)
 
-            // 月租金
             this.SectionField('月租金', '¥ 0.00', 48, this.monthlyRent, (v: string) => { this.monthlyRent = v })
-
-            // 押金
             this.SectionField('押金', '¥ 0.00', 48, this.deposit, (v: string) => { this.deposit = v })
 
-            // 入住/到期时间 并排
             Row({ space: 12 }) {
               this.DateField('入住时间', '2024.07.01', this.startDate, (v: string) => { this.startDate = v })
               this.DateField('到期时间', '2025.07.01', this.endDate, (v: string) => { this.endDate = v })
             }
             .width('100%')
+
+            if (!this.viewModel.isCandidateMode) {
+              Column({ space: 8 }) {
+                Text('续租意向')
+                  .fontSize(FontSizes.BODY)
+                  .fontColor(Colors.TEXT_PRIMARY)
+                  .fontFamily(Fonts.CN)
+                  .fontWeight(FontWeight.Medium)
+                  .alignSelf(ItemAlign.Start)
+
+                Row({ space: 12 }) {
+                  Text('续租')
+                    .fontSize(FontSizes.BODY)
+                    .fontColor(this.renewalStatus === 'renew' ? Colors.TEXT_WHITE : Colors.TEXT_SECONDARY)
+                    .fontFamily(Fonts.CN)
+                    .fontWeight(FontWeight.Medium)
+                    .padding({ left: 20, right: 20, top: 10, bottom: 10 })
+                    .backgroundColor(this.renewalStatus === 'renew' ? Colors.SUCCESS : Colors.CARD_BG)
+                    .borderRadius(Radius.TAG)
+                    .border({
+                      width: this.renewalStatus === 'renew' ? 0 : 1,
+                      color: Colors.DIVIDER_DARK,
+                      style: BorderStyle.Solid
+                    })
+                    .onClick(() => { this.renewalStatus = 'renew' })
+
+                  Text('不租')
+                    .fontSize(FontSizes.BODY)
+                    .fontColor(this.renewalStatus === 'no_renew' ? Colors.TEXT_WHITE : Colors.TEXT_SECONDARY)
+                    .fontFamily(Fonts.CN)
+                    .fontWeight(FontWeight.Medium)
+                    .padding({ left: 20, right: 20, top: 10, bottom: 10 })
+                    .backgroundColor(this.renewalStatus === 'no_renew' ? Colors.DANGER : Colors.CARD_BG)
+                    .borderRadius(Radius.TAG)
+                    .border({
+                      width: this.renewalStatus === 'no_renew' ? 0 : 1,
+                      color: Colors.DIVIDER_DARK,
+                      style: BorderStyle.Solid
+                    })
+                    .onClick(() => { this.renewalStatus = 'no_renew' })
+
+                  Text('待定')
+                    .fontSize(FontSizes.BODY)
+                    .fontColor(this.renewalStatus === 'undecided' ? Colors.TEXT_WHITE : Colors.TEXT_SECONDARY)
+                    .fontFamily(Fonts.CN)
+                    .fontWeight(FontWeight.Medium)
+                    .padding({ left: 20, right: 20, top: 10, bottom: 10 })
+                    .backgroundColor(this.renewalStatus === 'undecided' ? Colors.WARNING : Colors.CARD_BG)
+                    .borderRadius(Radius.TAG)
+                    .border({
+                      width: this.renewalStatus === 'undecided' ? 0 : 1,
+                      color: Colors.DIVIDER_DARK,
+                      style: BorderStyle.Solid
+                    })
+                    .onClick(() => { this.renewalStatus = 'undecided' })
+                }
+                .width('100%')
+              }
+            }
 
             // ===== 标签筛选 =====
             Text('标签')
@@ -276,19 +346,51 @@ export struct AddPropertyPage {
                 .alignSelf(ItemAlign.Start)
             }
 
-            // 保存按钮
-            Button('保存房源')
+            // 保存/删除按钮
+            if (this.viewModel.isEditMode) {
+              Row({ space: 12 }) {
+                Button('保存')
+                  .layoutWeight(1)
+                  .height(52)
+                  .fontSize(FontSizes.SECTION_TITLE)
+                  .fontColor(Colors.TEXT_WHITE)
+                  .fontFamily(Fonts.CN)
+                  .fontWeight(FontWeight.Medium)
+                  .backgroundColor(Colors.PRIMARY)
+                  .borderRadius(Radius.BUTTON)
+                  .onClick(() => {
+                    this.saveProperty();
+                  })
+
+                Button('删除')
+                  .layoutWeight(1)
+                  .height(52)
+                  .fontSize(FontSizes.SECTION_TITLE)
+                  .fontColor(Colors.DANGER)
+                  .fontFamily(Fonts.CN)
+                  .fontWeight(FontWeight.Medium)
+                  .backgroundColor(Colors.DANGER_LIGHT)
+                  .borderRadius(Radius.BUTTON)
+                  .border({ width: 1, color: Colors.DANGER_BORDER })
+                  .onClick(() => {
+                    this.showDeleteDialog();
+                  })
+              }
               .width('100%')
-              .height(52)
-              .fontSize(FontSizes.SECTION_TITLE)
-              .fontColor(Colors.TEXT_WHITE)
-              .fontFamily(Fonts.CN)
-              .fontWeight(FontWeight.Medium)
-              .backgroundColor(Colors.PRIMARY)
-              .borderRadius(Radius.BUTTON)
-              .onClick(() => {
-                this.saveProperty();
-              })
+            } else {
+              Button(this.viewModel.isCandidateMode ? '添加备选' : '保存')
+                .width('100%')
+                .height(52)
+                .fontSize(FontSizes.SECTION_TITLE)
+                .fontColor(Colors.TEXT_WHITE)
+                .fontFamily(Fonts.CN)
+                .fontWeight(FontWeight.Medium)
+                .backgroundColor(Colors.PRIMARY)
+                .borderRadius(Radius.BUTTON)
+                .onClick(() => {
+                  this.saveProperty();
+                })
+            }
           }
           .alignItems(HorizontalAlign.Center)
           .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: 8, bottom: 40 })
@@ -301,11 +403,20 @@ export struct AddPropertyPage {
       .backgroundColor(Colors.BG_PRIMARY)
     }
     .onReady((context: NavDestinationContext) => {
-      const param: Object = context.pathInfo.param as Object;
-      const paramObj: PropertyIdParam = param as PropertyIdParam;
-      if (paramObj.propertyId) {
-        this.viewModel.setEditMode(paramObj.propertyId);
+      const param: PropertyIdParam | undefined = context.pathInfo.param as PropertyIdParam | undefined;
+      if (param && param.propertyId) {
+        this.viewModel.setEditMode(param.propertyId);
+        const property: PropertyInfo | undefined = this.viewModel.loadProperty();
+        if (property && property.status === 'candidate') {
+          this.viewModel.isCandidateMode = true;
+        } else {
+          this.viewModel.isCandidateMode = false;
+        }
         this.loadPropertyData();
+      } else if (param && param.mode === 'candidate') {
+        this.viewModel.isCandidateMode = true;
+      } else {
+        this.viewModel.isCandidateMode = false;
       }
     })
     .hideTitleBar(true)
@@ -360,5 +471,29 @@ export struct AddPropertyPage {
         .onChange((v: string) => onChange(v))
     }
     .layoutWeight(1)
+  }
+
+  private showDeleteDialog(): void {
+    AlertDialog.show({
+      message: '确认删除此房源？删除后无法恢复。',
+      primaryButton: {
+        value: '确认删除',
+        action: () => {
+          if (this.viewModel.editPropertyId) {
+            this.viewModel.deleteProperty(this.viewModel.editPropertyId).then(() => {
+              const delResult: DeleteResult = new DeleteResult();
+              delResult.deleted = true;
+              delResult.propertyId = this.viewModel.editPropertyId;
+              this.refreshFlag++;
+              this.navPathStack.pop(delResult);
+            });
+          }
+        }
+      },
+      secondaryButton: {
+        value: '取消',
+        action: () => {}
+      }
+    });
   }
 }

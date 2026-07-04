@@ -5,10 +5,13 @@
  */
 import { UIAbility, Want, AbilityConstant } from '@kit.AbilityKit';
 import { window } from '@kit.ArkUI';
+import { PropertyRepository } from '../repository/PropertyRepository';
 
 export default class EntryAbility extends UIAbility {
-  onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+  async onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): Promise<void> {
     console.info('[RentalTracker] EntryAbility onCreate');
+    const repository: PropertyRepository = PropertyRepository.getInstance();
+    await repository.init(this.context);
   }
 
   onDestroy(): void {

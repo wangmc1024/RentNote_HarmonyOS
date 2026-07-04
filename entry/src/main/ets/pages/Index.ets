@@ -1,38 +1,42 @@
-/**
- * 首页 - Navigation+Tabs 容器入口
- * 使用 @ComponentV2+@Local 装饰器
- * 创建 NavPathStack 并通过 @Provider 共享给子组件
- * 底部 Tab 栏使用 Tabs 内置 tabBar 配合 SymbolGlyph 系统图标
- * 路由通过 route_map.json 配置，不再使用 navDestination
- */
 import { Colors, Fonts, FontSizes, Dimensions, Radius, Spacing } from '../common/DesignTokens';
 import { HomeContent } from './HomeContent';
-import { StatisticsContent } from './StatisticsContent';
+import { CandidateContent } from './CandidateContent';
 import { MyContent } from './MyContent';
 import { PropertyRepository } from '../repository/PropertyRepository';
-import { AppStorageV2 } from '@kit.ArkUI';
+import { uiObserver } from '@kit.ArkUI';
 
 @Entry
 @ComponentV2
 struct Index {
   @Provider('navPathStack') navPathStack: NavPathStack = new NavPathStack();
-  @Local currentTab: number = 0;
+  @Provider('refreshFlag') refreshFlag: number = 0;
+  @Local currentTab: number = 1;
 
-  // 初始化全局 Repository
-  private repository: PropertyRepository = AppStorageV2.connect(PropertyRepository, () => new PropertyRepository())!;
+  private repository: PropertyRepository = PropertyRepository.getInstance();
+
+  aboutToAppear(): void {
+    this.navPathStack.setInterception({
+      didShow: (from: NavDestinationContext | "navBar", to: NavDestinationContext | "navBar",
+        operation: NavigationOperation, isAnimated: boolean) => {
+        if (to === 'navBar') {
+          this.refreshFlag++;
+        }
+      }
+    });
+  }
 
   build() {
     Navigation(this.navPathStack) {
       Tabs({ barPosition: BarPosition.End, index: this.currentTab }) {
         TabContent() {
-          HomeContent()
+          CandidateContent()
         }
-        .tabBar(this.TabBuilder(0, $r('sys.symbol.house'), '首页'))
+        .tabBar(this.TabBuilder(0, $r('sys.symbol.magnifyingglass'), '备选'))
 
         TabContent() {
-          StatisticsContent()
+          HomeContent()
         }
-        .tabBar(this.TabBuilder(1, $r('sys.symbol.calendar'), '统计'))
+        .tabBar(this.TabBuilder(1, $r('sys.symbol.house'), 'Home'))
 
         TabContent() {
           MyContent()

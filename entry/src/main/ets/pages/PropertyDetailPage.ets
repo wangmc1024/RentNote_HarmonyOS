@@ -5,7 +5,7 @@
  * 从 PropertyDetailViewModel 加载对应房源数据
  * 统一使用 HeaderBar 组件
  */
-import { Colors, Fonts, FontSizes, Dimensions, Radius, Shadows, Spacing } from '../common/DesignTokens';
+import { Colors, Fonts, FontSizes, Dimensions, Radius, Shadows, Spacing, getTagTextColor, getTagBgColor } from '../common/DesignTokens';
 import { HeaderBar } from '../components/HeaderBar';
 import { PropertyDetailViewModel } from '../viewmodel/PropertyDetailViewModel';
 import { PropertyInfo, PropertyIdParam, DeleteResult } from '../model/PropertyModel';
@@ -34,19 +34,7 @@ export struct PropertyDetailPage {
           onBack: () => {
             this.navPathStack.pop();
           },
-          rightContent: () => {
-            Text('编辑')
-              .fontSize(FontSizes.BODY_LARGE)
-              .fontColor(Colors.PRIMARY)
-              .fontFamily(Fonts.CN)
-              .fontWeight(FontWeight.Medium)
-              .onClick(() => {
-                if (this.viewModel.property) {
-                  const editParam: PropertyIdParam = { propertyId: this.viewModel.property.id };
-                  this.navPathStack.pushPathByName('AddProperty', editParam);
-                }
-              })
-          }
+          rightContent: (): void => { this.EditRightContent() }
         })
 
         // 内容区
@@ -67,6 +55,21 @@ export struct PropertyDetailPage {
       }
     })
     .hideTitleBar(true)
+  }
+
+  @Builder
+  EditRightContent() {
+    Text('编辑')
+      .fontSize(FontSizes.BODY_LARGE)
+      .fontColor(Colors.PRIMARY)
+      .fontFamily(Fonts.CN)
+      .fontWeight(FontWeight.Medium)
+      .onClick(() => {
+        if (this.viewModel.property) {
+          const editParam: PropertyIdParam = { propertyId: this.viewModel.property.id, mode: '' };
+          this.navPathStack.pushPathByName('AddProperty', editParam);
+        }
+      })
   }
 
   @Builder
@@ -94,11 +97,11 @@ export struct PropertyDetailPage {
             ForEach(property.tags, (tag: string) => {
               Text(tag)
                 .fontSize(FontSizes.CAPTION)
-                .fontColor(Colors.PRIMARY)
+                .fontColor(getTagTextColor(tag))
                 .fontFamily(Fonts.CN)
                 .fontWeight(FontWeight.Medium)
                 .padding({ left: 12, right: 12, top: 5, bottom: 5 })
-                .backgroundColor(Colors.PRIMARY_LIGHT)
+                .backgroundColor(getTagBgColor(tag))
                 .borderRadius(Radius.TAG)
                 .margin({ right: Spacing.ITEM_GAP_SM })
             }, (item: string) => item)
@@ -168,44 +171,46 @@ export struct PropertyDetailPage {
         .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
 
         // ===== 账单卡片 =====
-        Row() {
-          Column() {
-            Text('本月应缴')
-              .fontSize(FontSizes.BODY)
-              .fontColor(Colors.TEXT_SECONDARY)
+        if (property.status !== 'candidate') {
+          Row() {
+            Column() {
+              Text('本月应缴')
+                .fontSize(FontSizes.BODY)
+                .fontColor(Colors.TEXT_SECONDARY)
+                .fontFamily(Fonts.CN)
+
+              Text('¥' + property.monthlyRent.toLocaleString())
+                .fontSize(FontSizes.TITLE)
+                .fontColor(Colors.TEXT_PRIMARY)
+                .fontFamily(Fonts.NUMBER)
+                .fontWeight(FontWeight.Bold)
+                .margin({ top: 4 })
+            }
+
+            Blank()
+
+            Text(property.billsPaid > 0 ? '已缴纳' : '待缴纳')
+              .fontSize(FontSizes.BODY_SMALL)
+              .fontColor(property.billsPaid > 0 ? Colors.SUCCESS : Colors.WARNING)
               .fontFamily(Fonts.CN)
-
-            Text('¥' + property.monthlyRent.toLocaleString())
-              .fontSize(FontSizes.TITLE)
-              .fontColor(Colors.TEXT_PRIMARY)
-              .fontFamily(Fonts.NUMBER)
-              .fontWeight(FontWeight.Bold)
-              .margin({ top: 4 })
+              .fontWeight(FontWeight.Medium)
+              .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+              .backgroundColor(property.billsPaid > 0 ? Colors.SUCCESS_LIGHT : Colors.WARNING_LIGHT)
+              .borderRadius(Radius.CARD)
           }
-
-          Blank()
-
-          Text(property.billsPaid > 0 ? '已缴纳' : '待缴纳')
-            .fontSize(FontSizes.BODY_SMALL)
-            .fontColor(property.billsPaid > 0 ? Colors.SUCCESS : Colors.WARNING)
-            .fontFamily(Fonts.CN)
-            .fontWeight(FontWeight.Medium)
-            .padding({ left: 12, right: 12, top: 6, bottom: 6 })
-            .backgroundColor(property.billsPaid > 0 ? Colors.SUCCESS_LIGHT : Colors.WARNING_LIGHT)
-            .borderRadius(Radius.CARD)
+          .width('100%')
+          .height(Dimensions.BILL_CARD_HEIGHT)
+          .backgroundColor(Colors.CARD_BG)
+          .borderRadius(Radius.CARD)
+          .padding({ left: Spacing.CARD_PADDING, right: Spacing.CARD_PADDING })
+          .shadow({
+            radius: Shadows.CARD.radius,
+            color: Shadows.CARD.color,
+            offsetX: Shadows.CARD.offsetX,
+            offsetY: Shadows.CARD.offsetY
+          })
+          .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
         }
-        .width('100%')
-        .height(Dimensions.BILL_CARD_HEIGHT)
-        .backgroundColor(Colors.CARD_BG)
-        .borderRadius(Radius.CARD)
-        .padding({ left: Spacing.CARD_PADDING, right: Spacing.CARD_PADDING })
-        .shadow({
-          radius: Shadows.CARD.radius,
-          color: Shadows.CARD.color,
-          offsetX: Shadows.CARD.offsetX,
-          offsetY: Shadows.CARD.offsetY
-        })
-        .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
 
         // ===== 操作按钮 =====
         Row() {
@@ -219,7 +224,7 @@ export struct PropertyDetailPage {
             .backgroundColor(Colors.PRIMARY)
             .borderRadius(Radius.BUTTON)
             .onClick(() => {
-              const editParam: PropertyIdParam = { propertyId: property.id };
+              const editParam: PropertyIdParam = { propertyId: property.id, mode: '' };
               this.navPathStack.pushPathByName('AddProperty', editParam);
             })
 
@@ -256,9 +261,10 @@ export struct PropertyDetailPage {
       primaryButton: {
         value: '确认删除',
         action: () => {
-          this.viewModel.deleteProperty(id);
-          const deleteResult: DeleteResult = { deleted: true, propertyId: id };
-          this.navPathStack.pop({ result: deleteResult });
+          this.viewModel.deleteProperty(id).then(() => {
+            const deleteResult: DeleteResult = { deleted: true, propertyId: id };
+            this.navPathStack.pop({ result: deleteResult });
+          });
         }
       },
       secondaryButton: {

@@ -20,6 +20,43 @@ export class PropertyInfo {
   @Trace billsPaid: number = 0;
   @Trace imageUrl: string = '';
   @Trace notes: string = '';
+  @Trace renewalStatus: string = '';
+
+  toDTO(): PropertyDTO {
+    const dto: PropertyDTO = new PropertyDTO();
+    dto.id = this.id;
+    dto.name = this.name;
+    dto.address = this.address;
+    dto.district = this.district;
+    dto.tags = this.tags;
+    dto.monthlyRent = this.monthlyRent;
+    dto.deposit = this.deposit;
+    dto.startDate = this.startDate;
+    dto.endDate = this.endDate;
+    dto.status = this.status;
+    dto.billsPaid = this.billsPaid;
+    dto.imageUrl = this.imageUrl;
+    dto.notes = this.notes;
+    dto.renewalStatus = this.renewalStatus;
+    return dto;
+  }
+}
+
+export class PropertyDTO {
+  id: string = '';
+  name: string = '';
+  address: string = '';
+  district: string = '';
+  tags: string[] = [];
+  monthlyRent: number = 0;
+  deposit: number = 0;
+  startDate: string = '';
+  endDate: string = '';
+  status: string = 'renting';
+  billsPaid: number = 0;
+  imageUrl: string = '';
+  notes: string = '';
+  renewalStatus: string = '';
 }
 
 /** 统计概览数据 */
@@ -36,9 +73,21 @@ export class MonthlyRentItem {
   amount: number = 0;
 }
 
-/** 路由传参：房源 ID */
+/** 租期时间线条目 */
+export class LeaseTimelineItem {
+  propertyId: string = '';
+  name: string = '';
+  monthlyRent: number = 0;
+  startYear: number = 0;
+  startMonth: number = 0;
+  endYear: number = 0;
+  endMonth: number = 0;
+  isExpiring: boolean = false;
+}
+
 export class PropertyIdParam {
   propertyId: string = '';
+  mode: string = '';
 }
 
 /** 路由返回结果：保存成功 */

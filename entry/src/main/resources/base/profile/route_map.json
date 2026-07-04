@@ -31,6 +31,70 @@
       "data": {
         "description": "关于页面"
       }
+    },
+    {
+      "name": "Reminder",
+      "pageSourceFile": "src/main/ets/pages/ReminderPage.ets",
+      "buildFunction": "ReminderBuilder",
+      "data": {
+        "description": "租约到期提醒"
+      }
+    },
+    {
+      "name": "Notification",
+      "pageSourceFile": "src/main/ets/pages/NotificationPage.ets",
+      "buildFunction": "NotificationBuilder",
+      "data": {
+        "description": "通知设置"
+      }
+    },
+    {
+      "name": "DataManage",
+      "pageSourceFile": "src/main/ets/pages/DataManagePage.ets",
+      "buildFunction": "DataManageBuilder",
+      "data": {
+        "description": "数据管理"
+      }
+    },
+    {
+      "name": "DataImport",
+      "pageSourceFile": "src/main/ets/pages/DataImportPage.ets",
+      "buildFunction": "DataImportBuilder",
+      "data": {
+        "description": "数据导入"
+      }
+    },
+    {
+      "name": "DataRestore",
+      "pageSourceFile": "src/main/ets/pages/DataRestorePage.ets",
+      "buildFunction": "DataRestoreBuilder",
+      "data": {
+        "description": "数据恢复"
+      }
+    },
+    {
+      "name": "DataExport",
+      "pageSourceFile": "src/main/ets/pages/DataExportPage.ets",
+      "buildFunction": "DataExportBuilder",
+      "data": {
+        "description": "导出数据"
+      }
+    },
+    {
+      "name": "Privacy",
+      "pageSourceFile": "src/main/ets/pages/PrivacyPage.ets",
+      "buildFunction": "PrivacyBuilder",
+      "data": {
+        "description": "隐私政策"
+      }
+    },
+    {
+      "name": "Agreement",
+      "pageSourceFile": "src/main/ets/pages/AgreementPage.ets",
+      "buildFunction": "AgreementBuilder",
+      "data": {
+        "description": "用户协议"
+      }
     }
   ]
 }

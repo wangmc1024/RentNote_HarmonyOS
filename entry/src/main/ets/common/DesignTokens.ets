@@ -169,3 +169,56 @@ export class Shadows {
     offsetY: 4
   };
 }
+
+// ============ 标签颜色映射 ============
+const TAG_COLOR_MAP: Record<string, string> = {
+  '押一付三': Colors.TAG_PAYMENT_TEXT,
+  '半年付': Colors.TAG_PAYMENT_TEXT,
+  '整租': Colors.TAG_LEASE_TEXT,
+  '合租': Colors.TAG_LEASE_TEXT,
+  '精装修': Colors.TAG_CONDITION_TEXT,
+  '民水民电': Colors.TAG_CONDITION_TEXT,
+  '包物业': Colors.TAG_CONDITION_TEXT,
+  '有电梯': Colors.TAG_CONDITION_TEXT,
+  '朝南': Colors.TAG_CONDITION_TEXT,
+  '学区房': Colors.TAG_CONDITION_TEXT,
+  '南北通透': Colors.TAG_CONDITION_TEXT,
+  '新小区': Colors.TAG_CONDITION_TEXT,
+  '近地铁': Colors.TAG_SURROUND_TEXT,
+  '可短租': Colors.TAG_SURROUND_TEXT,
+  '房东好说话': Colors.TAG_SURROUND_TEXT,
+  '科技园区': Colors.TAG_SURROUND_TEXT
+};
+
+const TAG_BG_MAP: Record<string, string> = {
+  '押一付三': Colors.TAG_PAYMENT_BG,
+  '半年付': Colors.TAG_PAYMENT_BG,
+  '整租': Colors.TAG_LEASE_BG,
+  '合租': Colors.TAG_LEASE_BG,
+  '精装修': Colors.TAG_CONDITION_BG,
+  '民水民电': Colors.TAG_CONDITION_BG,
+  '包物业': Colors.TAG_CONDITION_BG,
+  '有电梯': Colors.TAG_CONDITION_BG,
+  '朝南': Colors.TAG_CONDITION_BG,
+  '学区房': Colors.TAG_CONDITION_BG,
+  '南北通透': Colors.TAG_CONDITION_BG,
+  '新小区': Colors.TAG_CONDITION_BG,
+  '近地铁': Colors.TAG_SURROUND_BG,
+  '可短租': Colors.TAG_SURROUND_BG,
+  '房东好说话': Colors.TAG_SURROUND_BG,
+  '科技园区': Colors.TAG_SURROUND_BG
+};
+
+export function getTagTextColor(tag: string): string {
+  if (TAG_COLOR_MAP[tag] !== undefined) {
+    return TAG_COLOR_MAP[tag];
+  }
+  return Colors.TEXT_MUTED;
+}
+
+export function getTagBgColor(tag: string): string {
+  if (TAG_BG_MAP[tag] !== undefined) {
+    return TAG_BG_MAP[tag];
+  }
+  return Colors.DIVIDER_LIGHT;
+}
