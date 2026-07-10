@@ -12,7 +12,6 @@ import { TagCategory } from '../model/TagModel';
 import { PropertyInfo, PropertyIdParam, SaveResult, DeleteResult, MapPickerResult } from '../model/PropertyModel';
 import { AddPropertyViewModel } from '../viewmodel/AddPropertyViewModel';
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
-import { fileIo } from '@kit.CoreFileKit';
 
 @Builder
 export function AddPropertyBuilder() {
@@ -92,26 +91,10 @@ export struct AddPropertyPage {
       const picker: photoAccessHelper.PhotoViewPicker = new photoAccessHelper.PhotoViewPicker();
       const result: photoAccessHelper.PhotoSelectResult = await picker.select(options);
       if (result.photoUris && result.photoUris.length > 0) {
-        for (const srcUri of result.photoUris) {
-          await this.copyImageToSandbox(srcUri);
-        }
+        this.imageUris = [...this.imageUris, ...result.photoUris];
       }
     } catch (_e) {
       promptAction.showToast({ message: '选择图片失败', duration: 2000 });
-    }
-  }
-
-  private async copyImageToSandbox(srcUri: string): Promise<void> {
-    try {
-      const context: Context = this.getUIContext().getHostContext() as Context;
-      const fileName: string = 'property_' + Date.now() + '.jpg';
-      const destPath: string = context.filesDir + '/' + fileName;
-      const srcFile: fileIo.File = fileIo.openSync(srcUri, fileIo.OpenMode.READ_ONLY);
-      fileIo.copyFileSync(srcFile.fd, destPath);
-      fileIo.closeSync(srcFile);
-      this.imageUris = [...this.imageUris, destPath];
-    } catch (_e) {
-      promptAction.showToast({ message: '保存图片失败', duration: 2000 });
     }
   }
 

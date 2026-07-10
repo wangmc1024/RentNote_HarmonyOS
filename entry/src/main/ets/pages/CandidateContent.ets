@@ -486,12 +486,12 @@ struct CandidateCard {
 
       Column() {
         Row() {
-           if (this.property.getFirstImage().length > 0) {
+            if (this.property.getFirstImage().length > 0) {
              Image(this.property.getFirstImage())
                .width(48)
                .height(48)
                .objectFit(ImageFit.Cover)
-               .borderRadius(Radius.ICON_BG)
+               .borderRadius(24)
            } else {
              Row() {
                SymbolGlyph($r('sys.symbol.house'))

@@ -12,3 +12,4 @@
 /.appanalyzer
 *.md
 !README.md
+/docs

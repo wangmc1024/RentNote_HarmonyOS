@@ -30,12 +30,21 @@ export class PropertyRepository {
     this.initContext = context;
     this.prefs = await preferences.getPreferences(context, PREFS_NAME);
     const storedVersion: number = this.prefs.getSync(KEY_VERSION, 0) as number;
-    if (storedVersion < DATA_VERSION) {
+    if (storedVersion === 0) {
       this.prefs.putSync(KEY_PROPERTIES, '[]');
       this.prefs.putSync(KEY_NEXT_ID, 1);
       this.prefs.putSync(KEY_VERSION, DATA_VERSION);
       await this.prefs.flush();
       await this.insertMockData();
+    } else if (storedVersion < DATA_VERSION) {
+      this.loadFromPrefs();
+      this.prefs.putSync(KEY_VERSION, DATA_VERSION);
+      const dtoList: PropertyDTO[] = [];
+      for (const p of this.properties) {
+        dtoList.push(p.toDTO());
+      }
+      this.prefs!.putSync(KEY_PROPERTIES, JSON.stringify(dtoList));
+      await this.prefs!.flush();
     }
     this.loadFromPrefs();
     this.isInitialized = true;

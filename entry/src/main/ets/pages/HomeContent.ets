@@ -192,7 +192,7 @@ export struct HomeContent {
              .width(56)
              .height(56)
              .objectFit(ImageFit.Cover)
-             .borderRadius(Radius.ICON_BG)
+             .borderRadius(28)
          } else {
            Row() {
              SymbolGlyph($r('sys.symbol.building'))
