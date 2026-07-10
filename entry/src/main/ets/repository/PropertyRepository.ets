@@ -1,5 +1,6 @@
 import { preferences } from '@kit.ArkData';
 import { PropertyInfo, PropertyDTO, StatisticsOverview, MonthlyRentItem, LeaseTimelineItem, UserProfileDTO, UserProfile } from '../model/PropertyModel';
+import EntryFormAbility from '../widget/EntryFormAbility';
 
 const PREFS_NAME: string = 'RentNotePrefs';
 const KEY_PROPERTIES: string = 'properties';
@@ -112,6 +113,12 @@ export class PropertyRepository {
     const json: string = JSON.stringify(dtoList);
     this.prefs!.putSync(KEY_PROPERTIES, json);
     await this.prefs!.flush();
+  }
+
+  private notifyWidgetUpdate(): void {
+    if (this.initContext) {
+      EntryFormAbility.notifyUpdate(this.initContext);
+    }
   }
 
   private async insertMockData(): Promise<void> {
@@ -248,6 +255,7 @@ export class PropertyRepository {
     }
     this.properties = [...this.properties, property];
     await this.saveToPrefs();
+    this.notifyWidgetUpdate();
   }
 
   async updateProperty(property: PropertyInfo): Promise<void> {
@@ -257,12 +265,14 @@ export class PropertyRepository {
       newList[index] = property;
       this.properties = newList;
       await this.saveToPrefs();
+      this.notifyWidgetUpdate();
     }
   }
 
   async deleteProperty(id: string): Promise<void> {
     this.properties = this.properties.filter((item: PropertyInfo) => item.id !== id);
     await this.saveToPrefs();
+    this.notifyWidgetUpdate();
   }
 
   getCandidates(): PropertyInfo[] {
@@ -295,6 +305,7 @@ export class PropertyRepository {
     }
     this.properties = newList;
     await this.saveToPrefs();
+    this.notifyWidgetUpdate();
   }
 
   async demoteRenting(id: string): Promise<void> {
@@ -313,12 +324,14 @@ export class PropertyRepository {
       newList[index] = demoted;
       this.properties = newList;
       await this.saveToPrefs();
+      this.notifyWidgetUpdate();
     }
   }
 
   async batchDelete(ids: string[]): Promise<void> {
     this.properties = this.properties.filter((item: PropertyInfo) => !ids.includes(item.id));
     await this.saveToPrefs();
+    this.notifyWidgetUpdate();
   }
 
   async clearAll(): Promise<void> {
@@ -326,6 +339,7 @@ export class PropertyRepository {
     this.prefs!.putSync(KEY_NEXT_ID, 1);
     this.prefs!.putSync(KEY_USER_PROFILE, '');
     await this.saveToPrefs();
+    this.notifyWidgetUpdate();
   }
 
   getStatisticsOverview(): StatisticsOverview {

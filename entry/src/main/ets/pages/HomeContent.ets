@@ -124,21 +124,6 @@ export struct HomeContent {
             .fontColor(Colors.TEXT_PRIMARY)
             .fontFamily(Fonts.CN)
             .fontWeight(FontWeight.Bold)
-
-          Blank()
-
-          Row() {
-            Text('子')
-              .fontSize(14)
-              .fontColor(Colors.TEXT_WHITE)
-              .fontFamily(Fonts.CN)
-              .fontWeight(FontWeight.Bold)
-          }
-          .width(32)
-          .height(32)
-          .backgroundColor(Colors.PRIMARY)
-          .borderRadius(16)
-          .justifyContent(FlexAlign.Center)
         }
         .width('100%')
         .height(Dimensions.HEADER_HEIGHT)

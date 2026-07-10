@@ -13,3 +13,4 @@
 *.md
 !README.md
 /docs
+/spec

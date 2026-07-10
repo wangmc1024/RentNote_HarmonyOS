@@ -12,11 +12,16 @@ export struct CandidateContent {
   @Local isEditMode: boolean = false;
   @Local selectedIds: Set<string> = new Set();
   @Local isMapExpanded: boolean = false;
+  @Local selectedMarkerPropertyId: string = '';
+  @Local selectedMarkerPropertyName: string = '';
+  @Local selectedMarkerDistrict: string = '';
+  @Local selectedMarkerImage: string = '';
 
   private mapOptions?: mapCommon.MapOptions;
   private mapCallback?: AsyncCallback<map.MapComponentController>;
   private mapController?: map.MapComponentController;
   private addedMarkers: map.Marker[] = [];
+  private markerPropertyMap: Map<string, string> = new Map();
 
   @Monitor('refreshFlag')
   onRefreshFlagChange(): void {
@@ -50,6 +55,7 @@ export struct CandidateContent {
       marker.remove();
     }
     this.addedMarkers = [];
+    this.markerPropertyMap = new Map();
 
     const properties: PropertyInfo[] = this.viewModel.candidateProperties;
     for (const p of properties) {
@@ -67,11 +73,23 @@ export struct CandidateContent {
         };
         const marker: map.Marker = await this.mapController.addMarker(markerOptions);
         this.addedMarkers.push(marker);
+        this.markerPropertyMap.set(p.name, p.id);
       }
     }
-    for (const marker of this.addedMarkers) {
-      marker.setInfoWindowVisible(true);
-    }
+    this.mapController.on('markerClick', (marker: map.Marker) => {
+      const markerTitle: string = marker.getTitle();
+      const propId: string | undefined = this.markerPropertyMap.get(markerTitle);
+      if (propId) {
+        const prop: PropertyInfo | null = this.getPropertyById(propId);
+        if (prop) {
+          this.selectedMarkerPropertyId = prop.id;
+          this.selectedMarkerPropertyName = prop.name;
+          this.selectedMarkerDistrict = prop.district;
+          this.selectedMarkerImage = prop.getFirstImage();
+        }
+      }
+      return false;
+    });
   }
 
   private enterEditMode(id: string): void {
@@ -137,6 +155,16 @@ export struct CandidateContent {
 
   private hasRentingProperty(): boolean {
     return this.viewModel.rentingProperties.length > 0;
+  }
+
+  private getPropertyById(id: string): PropertyInfo | null {
+    const all: PropertyInfo[] = [...this.viewModel.candidateProperties, ...this.viewModel.rentingProperties];
+    for (const p of all) {
+      if (p.id === id) {
+        return p;
+      }
+    }
+    return null;
   }
 
   build() {
@@ -420,8 +448,83 @@ export struct CandidateContent {
           this.navPathStack.pushPathByName('AddProperty', addParam);
         })
       }
+
+      if (this.selectedMarkerPropertyId.length > 0) {
+        this.MarkerInfoOverlay()
+      }
     }
     .layoutWeight(1)
+  }
+
+  @Builder
+  MarkerInfoOverlay() {
+    Column() {
+      Row() {
+        if (this.selectedMarkerImage.length > 0) {
+          Image(this.selectedMarkerImage)
+            .width(48)
+            .height(48)
+            .objectFit(ImageFit.Cover)
+            .borderRadius(Radius.CARD_SM)
+            .margin({ right: 12 })
+        }
+        Column() {
+          Text(this.selectedMarkerPropertyName)
+            .fontSize(FontSizes.BODY)
+            .fontColor(Colors.TEXT_PRIMARY)
+            .fontFamily(Fonts.CN)
+            .fontWeight(FontWeight.Medium)
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+          if (this.selectedMarkerDistrict.length > 0) {
+            Text(this.selectedMarkerDistrict)
+              .fontSize(FontSizes.CAPTION)
+              .fontColor(Colors.TEXT_MUTED)
+              .fontFamily(Fonts.CN)
+              .margin({ top: 2 })
+          }
+        }
+        .layoutWeight(1)
+        Row() {
+          SymbolGlyph($r('sys.symbol.xmark'))
+            .fontSize(16)
+            .fontColor([Colors.TEXT_MUTED])
+        }
+        .width(28)
+        .height(28)
+        .justifyContent(FlexAlign.Center)
+        .onClick(() => {
+          this.clearMarkerSelection();
+        })
+      }
+      .width('100%')
+      .padding({ left: 16, right: 12, top: 12, bottom: 12 })
+      .backgroundColor(Colors.CARD_BG)
+      .borderRadius(Radius.CARD)
+      .shadow({
+        radius: Shadows.CARD.radius,
+        color: 'rgba(0,0,0,0.12)',
+        offsetX: 0,
+        offsetY: 2
+      })
+      .onClick(() => {
+        if (this.selectedMarkerPropertyId.length > 0) {
+          const detailParam: PropertyIdParam = new PropertyIdParam();
+          detailParam.propertyId = this.selectedMarkerPropertyId;
+          this.navPathStack.pushPathByName('PropertyDetail', detailParam);
+          this.clearMarkerSelection();
+        }
+      })
+    }
+    .width('100%')
+    .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, bottom: 16 })
+  }
+
+  private clearMarkerSelection(): void {
+    this.selectedMarkerPropertyId = '';
+    this.selectedMarkerPropertyName = '';
+    this.selectedMarkerDistrict = '';
+    this.selectedMarkerImage = '';
   }
 
   @Builder

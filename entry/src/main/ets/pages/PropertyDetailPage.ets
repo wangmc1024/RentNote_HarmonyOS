@@ -22,6 +22,7 @@ export function PropertyDetailBuilder() {
 export struct PropertyDetailPage {
   @Local viewModel: PropertyDetailViewModel = new PropertyDetailViewModel();
   @Local propertyId: string = '';
+  @Local previewIndex: number = -1;
   @Consumer('navPathStack') navPathStack: NavPathStack = new NavPathStack();
   @Consumer('refreshFlag') refreshFlag: number = 0;
 
@@ -69,24 +70,31 @@ export struct PropertyDetailPage {
 
   build() {
     NavDestination() {
-      Column() {
-        HeaderBar({
-          title: '房源详情',
-          showBack: true,
-          onBack: () => {
-            this.navPathStack.pop();
-          },
-          rightContent: (): void => { this.EditRightContent() }
-        })
+      Stack() {
+        Column() {
+          HeaderBar({
+            title: '房源详情',
+            showBack: true,
+            onBack: () => {
+              this.navPathStack.pop();
+            },
+            rightContent: (): void => { this.EditRightContent() }
+          })
 
-        // 内容区
-        if (this.viewModel.property) {
-          this.ContentArea(this.viewModel.property as PropertyInfo)
+          if (this.viewModel.property) {
+            this.ContentArea(this.viewModel.property as PropertyInfo)
+          }
+        }
+        .width('100%')
+        .height('100%')
+        .backgroundColor(Colors.BG_PRIMARY)
+
+        if (this.previewIndex >= 0 && this.viewModel.property) {
+          this.ImagePreviewOverlay(this.viewModel.property as PropertyInfo)
         }
       }
       .width('100%')
       .height('100%')
-      .backgroundColor(Colors.BG_PRIMARY)
     }
     .onReady((context: NavDestinationContext) => {
       const param: Object = context.pathInfo.param as Object;
@@ -112,6 +120,53 @@ export struct PropertyDetailPage {
       }
     })
     .hideTitleBar(true)
+  }
+
+  @Builder
+  ImagePreviewOverlay(property: PropertyInfo) {
+    Column() {
+      Row() {
+        Text((this.previewIndex + 1).toString() + ' / ' + property.imageUrls.length.toString())
+          .fontSize(FontSizes.BODY)
+          .fontColor(Colors.TEXT_WHITE)
+          .fontFamily(Fonts.NUMBER)
+
+        Blank()
+
+        Row() {
+          SymbolGlyph($r('sys.symbol.xmark'))
+            .fontSize(20)
+            .fontColor([Colors.TEXT_WHITE])
+        }
+        .width(36)
+        .height(36)
+        .justifyContent(FlexAlign.Center)
+        .onClick(() => {
+          this.previewIndex = -1;
+        })
+      }
+      .width('100%')
+      .padding({ left: 16, right: 16, top: 48 })
+
+      Swiper() {
+        ForEach(property.imageUrls, (uri: string, index: number) => {
+          Image(uri)
+            .width('100%')
+            .objectFit(ImageFit.Contain)
+        }, (item: string, idx: number) => idx.toString())
+      }
+      .width('100%')
+      .layoutWeight(1)
+      .autoPlay(false)
+      .indicator(false)
+      .index(this.previewIndex)
+      .onChange((index: number) => {
+        this.previewIndex = index;
+      })
+    }
+    .width('100%')
+    .height('100%')
+    .backgroundColor('rgba(0,0,0,0.95)')
   }
 
   @Builder
@@ -170,22 +225,22 @@ export struct PropertyDetailPage {
         .margin({ top: 12 })
 
         if (property.imageUrls.length > 0) {
-          Column() {
-            Swiper() {
-              ForEach(property.imageUrls, (uri: string, index: number) => {
-                Image(uri)
-                  .width('100%')
-                  .height(200)
-                  .objectFit(ImageFit.Cover)
-              }, (item: string, idx: number) => idx.toString())
-            }
-            .width('100%')
-            .height(200)
-            .autoPlay(false)
-            .indicator(property.imageUrls.length > 1)
+          Flex({ wrap: FlexWrap.Wrap }) {
+            ForEach(property.imageUrls, (uri: string, index: number) => {
+              Image(uri)
+                .width(105)
+                .height(105)
+                .objectFit(ImageFit.Cover)
+                .borderRadius(Radius.CARD_SM)
+                .margin({ right: 8, bottom: 8 })
+                .onClick(() => {
+                  this.previewIndex = index;
+                })
+            }, (item: string, idx: number) => idx.toString())
           }
           .width('100%')
-          .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
+          .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
+          .margin({ top: Spacing.ITEM_GAP })
         }
 
         // ===== 地图卡片 =====
