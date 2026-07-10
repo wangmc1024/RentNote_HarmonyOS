@@ -111,6 +111,10 @@ export struct HomeContent {
     return Colors.WARNING_LIGHT;
   }
 
+  private hasLeaseInfo(p: PropertyInfo): boolean {
+    return p.startDate.length > 0 && p.endDate.length > 0;
+  }
+
   build() {
     Scroll() {
       Column() {
@@ -182,17 +186,25 @@ export struct HomeContent {
   @Builder
   RentingState() {
     Column() {
-      Row() {
-        Row() {
-          SymbolGlyph($r('sys.symbol.building'))
-            .fontSize(28)
-            .fontColor([Colors.PRIMARY])
-        }
-        .width(56)
-        .height(56)
-        .backgroundColor(Colors.PRIMARY_LIGHT)
-        .borderRadius(Radius.ICON_BG)
-        .justifyContent(FlexAlign.Center)
+       Row() {
+         if (this.viewModel.rentingProperties[0].getFirstImage().length > 0) {
+           Image(this.viewModel.rentingProperties[0].getFirstImage())
+             .width(56)
+             .height(56)
+             .objectFit(ImageFit.Cover)
+             .borderRadius(Radius.ICON_BG)
+         } else {
+           Row() {
+             SymbolGlyph($r('sys.symbol.building'))
+               .fontSize(28)
+               .fontColor([Colors.PRIMARY])
+           }
+           .width(56)
+           .height(56)
+           .backgroundColor(Colors.PRIMARY_LIGHT)
+           .borderRadius(Radius.ICON_BG)
+           .justifyContent(FlexAlign.Center)
+         }
 
         Column() {
           Text(this.viewModel.rentingProperties[0].name)
@@ -216,14 +228,16 @@ export struct HomeContent {
         .layoutWeight(1)
         .margin({ left: 16 })
 
-        Text(this.getRenewalLabel(this.viewModel.rentingProperties[0].renewalStatus))
-          .fontSize(FontSizes.CAPTION)
-          .fontColor(this.getRenewalColor(this.viewModel.rentingProperties[0].renewalStatus))
-          .fontFamily(Fonts.CN)
-          .fontWeight(FontWeight.Medium)
-          .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-          .backgroundColor(this.getRenewalBgColor(this.viewModel.rentingProperties[0].renewalStatus))
-          .borderRadius(Radius.TAG)
+        if (this.viewModel.rentingProperties[0].renewalStatus.length > 0) {
+          Text(this.getRenewalLabel(this.viewModel.rentingProperties[0].renewalStatus))
+            .fontSize(FontSizes.CAPTION)
+            .fontColor(this.getRenewalColor(this.viewModel.rentingProperties[0].renewalStatus))
+            .fontFamily(Fonts.CN)
+            .fontWeight(FontWeight.Medium)
+            .padding({ left: 10, right: 10, top: 4, bottom: 4 })
+            .backgroundColor(this.getRenewalBgColor(this.viewModel.rentingProperties[0].renewalStatus))
+            .borderRadius(Radius.TAG)
+        }
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
@@ -292,117 +306,119 @@ export struct HomeContent {
       offsetX: Shadows.CARD.offsetX,
       offsetY: Shadows.CARD.offsetY
     })
-    .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: 12 })
+    .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: 4 })
     .onClick(() => {
-      const editParam: PropertyIdParam = { propertyId: this.viewModel.rentingProperties[0].id, mode: '' };
-      this.navPathStack.pushPathByName('AddProperty', editParam);
+      const detailParam: PropertyIdParam = { propertyId: this.viewModel.rentingProperties[0].id, mode: '' };
+      this.navPathStack.pushPathByName('PropertyDetail', detailParam);
     })
 
-    Column() {
-      Row() {
-        Text('租期进度')
-          .fontSize(FontSizes.SECTION_TITLE)
-          .fontColor(Colors.TEXT_PRIMARY)
-          .fontFamily(Fonts.CN)
-          .fontWeight(FontWeight.Bold)
+    if (this.hasLeaseInfo(this.viewModel.rentingProperties[0])) {
+      Column() {
+        Row() {
+          Text('租期进度')
+            .fontSize(FontSizes.SECTION_TITLE)
+            .fontColor(Colors.TEXT_PRIMARY)
+            .fontFamily(Fonts.CN)
+            .fontWeight(FontWeight.Bold)
 
-        Blank()
+          Blank()
 
-        Text(this.getElapsedDays(this.viewModel.rentingProperties[0].startDate,
-          this.viewModel.rentingProperties[0].endDate) + ' / ' +
-          this.getTotalDays(this.viewModel.rentingProperties[0].startDate,
-            this.viewModel.rentingProperties[0].endDate) + ' 天')
+          Text(this.getElapsedDays(this.viewModel.rentingProperties[0].startDate,
+            this.viewModel.rentingProperties[0].endDate) + ' / ' +
+            this.getTotalDays(this.viewModel.rentingProperties[0].startDate,
+              this.viewModel.rentingProperties[0].endDate) + ' 天')
+            .fontSize(FontSizes.CAPTION)
+            .fontColor(Colors.TEXT_MUTED)
+            .fontFamily(Fonts.NUMBER)
+        }
+        .width('100%')
+        .margin({ bottom: 12 })
+
+        Progress({
+          value: this.getLeaseProgress(this.viewModel.rentingProperties[0].startDate,
+            this.viewModel.rentingProperties[0].endDate),
+          total: 100,
+          type: ProgressType.Linear
+        })
+          .width('100%')
+          .height(12)
+          .color(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) <= 30 ?
+            Colors.WARNING : Colors.PRIMARY)
+          .backgroundColor(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) <= 30 ?
+            Colors.WARNING_LIGHT : Colors.PRIMARY_LIGHT)
+          .style({ strokeWidth: 12 })
+
+        Row() {
+          Text(this.viewModel.rentingProperties[0].startDate)
+            .fontSize(10)
+            .fontColor(Colors.TEXT_MUTED)
+            .fontFamily(Fonts.NUMBER)
+
+          Blank()
+
+          Text(this.viewModel.rentingProperties[0].endDate)
+            .fontSize(10)
+            .fontColor(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) <= 30 ?
+              Colors.WARNING : Colors.TEXT_MUTED)
+            .fontFamily(Fonts.NUMBER)
+        }
+        .width('100%')
+        .margin({ top: 6 })
+      }
+      .width('100%')
+      .backgroundColor(Colors.CARD_BG)
+      .borderRadius(Radius.CARD)
+      .padding(Spacing.CARD_PADDING)
+      .shadow({
+        radius: Shadows.CARD.radius,
+        color: Shadows.CARD.color,
+        offsetX: Shadows.CARD.offsetX,
+        offsetY: Shadows.CARD.offsetY
+      })
+      .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
+
+      Column() {
+        Text(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) < 0 ? '已过期' : '到期倒计时')
           .fontSize(FontSizes.CAPTION)
           .fontColor(Colors.TEXT_MUTED)
-          .fontFamily(Fonts.NUMBER)
-      }
-      .width('100%')
-      .margin({ bottom: 12 })
-
-      Progress({
-        value: this.getLeaseProgress(this.viewModel.rentingProperties[0].startDate,
-          this.viewModel.rentingProperties[0].endDate),
-        total: 100,
-        type: ProgressType.Linear
-      })
-        .width('100%')
-        .height(12)
-        .color(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) <= 30 ?
-          Colors.WARNING : Colors.PRIMARY)
-        .backgroundColor(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) <= 30 ?
-          Colors.WARNING_LIGHT : Colors.PRIMARY_LIGHT)
-        .style({ strokeWidth: 12 })
-
-      Row() {
-        Text(this.viewModel.rentingProperties[0].startDate)
-          .fontSize(10)
-          .fontColor(Colors.TEXT_MUTED)
-          .fontFamily(Fonts.NUMBER)
-
-        Blank()
-
-        Text(this.viewModel.rentingProperties[0].endDate)
-          .fontSize(10)
-          .fontColor(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) <= 30 ?
-            Colors.WARNING : Colors.TEXT_MUTED)
-          .fontFamily(Fonts.NUMBER)
-      }
-      .width('100%')
-      .margin({ top: 6 })
-    }
-    .width('100%')
-    .backgroundColor(Colors.CARD_BG)
-    .borderRadius(Radius.CARD)
-    .padding(Spacing.CARD_PADDING)
-    .shadow({
-      radius: Shadows.CARD.radius,
-      color: Shadows.CARD.color,
-      offsetX: Shadows.CARD.offsetX,
-      offsetY: Shadows.CARD.offsetY
-    })
-    .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
-
-    Column() {
-      Text(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) < 0 ? '已过期' : '到期倒计时')
-        .fontSize(FontSizes.CAPTION)
-        .fontColor(Colors.TEXT_MUTED)
-        .fontFamily(Fonts.CN)
-
-      Row() {
-        Text(Math.abs(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate)).toString())
-          .fontSize(56)
-          .fontColor(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) < 0 ?
-            Colors.DANGER :
-            this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) <= 30 ?
-              Colors.WARNING : Colors.PRIMARY)
-          .fontFamily(Fonts.NUMBER)
-          .fontWeight(FontWeight.Bold)
-
-        Text(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) < 0 ?
-          '天前到期' : '天')
-          .fontSize(FontSizes.BODY_LARGE)
-          .fontColor(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) < 0 ?
-            Colors.DANGER :
-            this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) <= 30 ?
-              Colors.WARNING : Colors.TEXT_SECONDARY)
           .fontFamily(Fonts.CN)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 4, bottom: 8 })
+
+        Row() {
+          Text(Math.abs(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate)).toString())
+            .fontSize(56)
+            .fontColor(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) < 0 ?
+              Colors.DANGER :
+              this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) <= 30 ?
+                Colors.WARNING : Colors.PRIMARY)
+            .fontFamily(Fonts.NUMBER)
+            .fontWeight(FontWeight.Bold)
+
+          Text(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) < 0 ?
+            '天前到期' : '天')
+            .fontSize(FontSizes.BODY_LARGE)
+            .fontColor(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) < 0 ?
+              Colors.DANGER :
+              this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) <= 30 ?
+                Colors.WARNING : Colors.TEXT_SECONDARY)
+            .fontFamily(Fonts.CN)
+            .fontWeight(FontWeight.Medium)
+            .margin({ left: 4, bottom: 8 })
+        }
+        .alignItems(VerticalAlign.Bottom)
+        .margin({ top: 8 })
       }
-      .alignItems(VerticalAlign.Bottom)
-      .margin({ top: 8 })
+      .width('100%')
+      .alignItems(HorizontalAlign.Center)
+      .backgroundColor(Colors.CARD_BG)
+      .borderRadius(Radius.CARD)
+      .padding({ top: 20, bottom: 20, left: Spacing.CARD_PADDING, right: Spacing.CARD_PADDING })
+      .shadow({
+        radius: Shadows.CARD.radius,
+        color: Shadows.CARD.color,
+        offsetX: Shadows.CARD.offsetX,
+        offsetY: Shadows.CARD.offsetY
+      })
+      .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
     }
-    .width('100%')
-    .alignItems(HorizontalAlign.Center)
-    .backgroundColor(Colors.CARD_BG)
-    .borderRadius(Radius.CARD)
-    .padding({ top: 20, bottom: 20, left: Spacing.CARD_PADDING, right: Spacing.CARD_PADDING })
-    .shadow({
-      radius: Shadows.CARD.radius,
-      color: Shadows.CARD.color,
-      offsetX: Shadows.CARD.offsetX,
-      offsetY: Shadows.CARD.offsetY
-    })
-    .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
   }
 }

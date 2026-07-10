@@ -1,6 +1,7 @@
 import { Colors, Fonts, FontSizes, Radius, Shadows, Spacing } from '../common/DesignTokens';
 import { HeaderBar } from '../components/HeaderBar';
 import { MenuItemRow } from '../components/MenuItemRow';
+import { PropertyRepository } from '../repository/PropertyRepository';
 
 @Builder
 export function DataManageBuilder() {
@@ -10,6 +11,7 @@ export function DataManageBuilder() {
 @ComponentV2
 export struct DataManagePage {
   @Consumer('navPathStack') navPathStack: NavPathStack = new NavPathStack();
+  @Consumer('refreshFlag') refreshFlag: number = 0;
 
   build() {
     NavDestination() {
@@ -125,7 +127,11 @@ export struct DataManagePage {
       message: '确认清除所有房源数据？此操作不可恢复。',
       primaryButton: {
         value: '确认清除',
-        action: () => {}
+        action: () => {
+          PropertyRepository.getInstance().clearAll().then(() => {
+            this.refreshFlag++;
+          });
+        }
       },
       secondaryButton: {
         value: '取消',

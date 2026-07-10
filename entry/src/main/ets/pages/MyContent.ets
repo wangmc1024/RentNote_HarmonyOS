@@ -1,26 +1,58 @@
-/**
- * 我的 Tab 内容区 - 从原 MyPage.ets 改造
- * 使用 @ComponentV2+@Local 装饰器
- * @Consumer navPathStack 用于跳转设置/关于页
- * 移除 @State currentTab 和独立的 HeaderBar
- */
 import { Colors, Fonts, FontSizes, Dimensions, Radius, Shadows, Spacing } from '../common/DesignTokens';
 import { MenuItemRow } from '../components/MenuItemRow';
-import { HomeViewModel } from '../viewmodel/HomeViewModel';
+import { UserProfile } from '../model/PropertyModel';
+import { PropertyRepository } from '../repository/PropertyRepository';
+import { promptAction } from '@kit.ArkUI';
 
 @ComponentV2
 export struct MyContent {
-  @Local viewModel: HomeViewModel = new HomeViewModel();
+  @Local userName: string = '';
+  @Local userSubtitle: string = '';
+  @Local avatarUri: string = '';
   @Consumer('navPathStack') navPathStack: NavPathStack = new NavPathStack();
+  @Consumer('refreshFlag') refreshFlag: number = 0;
+
+  private repository: PropertyRepository = PropertyRepository.getInstance();
+
+  @Monitor('refreshFlag')
+  onRefreshFlagChange(): void {
+    this.loadProfile();
+  }
 
   aboutToAppear(): void {
-    this.viewModel.loadData();
+    this.loadProfile();
+  }
+
+  private loadProfile(): void {
+    const profile: UserProfile = this.repository.getUserProfile();
+    this.userName = profile.name;
+    this.userSubtitle = profile.subtitle;
+    this.avatarUri = profile.avatarUri;
+  }
+
+  private showClearDataDialog(): void {
+    AlertDialog.show({
+      message: '确认清除所有数据？将删除全部房源、租期和个人资料信息，且无法恢复。',
+      primaryButton: {
+        value: '确认清除',
+        action: () => {
+          this.repository.clearAll().then(() => {
+            this.refreshFlag++;
+            this.loadProfile();
+            promptAction.showToast({ message: '数据已清除', duration: 2000 });
+          });
+        }
+      },
+      secondaryButton: {
+        value: '取消',
+        action: () => {}
+      }
+    });
   }
 
   build() {
     Scroll() {
       Column() {
-        // 标题栏
         Row() {
           Text('我的')
             .fontSize(FontSizes.PAGE_TITLE)
@@ -34,110 +66,54 @@ export struct MyContent {
         .height(Dimensions.HEADER_HEIGHT)
         .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
 
-        // ===== 个人资料卡片 =====
         Column() {
-          // 头像行
           Row() {
-            Row() {
-              Text('子')
-                .fontSize(26)
-                .fontColor(Colors.TEXT_WHITE)
-                .fontFamily(Fonts.CN)
-                .fontWeight(FontWeight.Bold)
+            if (this.avatarUri.length > 0) {
+              Image(this.avatarUri)
+                .width(Dimensions.AVATAR_SIZE)
+                .height(Dimensions.AVATAR_SIZE)
+                .borderRadius(Radius.AVATAR)
+                .objectFit(ImageFit.Cover)
+            } else {
+              Row() {
+                Text(this.userName.length > 0 ? this.userName.charAt(0) : '我')
+                  .fontSize(26)
+                  .fontColor(Colors.TEXT_WHITE)
+                  .fontFamily(Fonts.CN)
+                  .fontWeight(FontWeight.Bold)
+              }
+              .width(Dimensions.AVATAR_SIZE)
+              .height(Dimensions.AVATAR_SIZE)
+              .backgroundColor(Colors.PRIMARY)
+              .borderRadius(Radius.AVATAR)
+              .justifyContent(FlexAlign.Center)
             }
-            .width(Dimensions.AVATAR_SIZE)
-            .height(Dimensions.AVATAR_SIZE)
-            .backgroundColor(Colors.PRIMARY)
-            .borderRadius(Radius.AVATAR)
-            .justifyContent(FlexAlign.Center)
 
             Column() {
-              Text('子悦')
+              Text(this.userName.length > 0 ? this.userName : '点击编辑资料')
                 .fontSize(20)
                 .fontColor(Colors.TEXT_PRIMARY)
                 .fontFamily(Fonts.CN)
                 .fontWeight(FontWeight.Bold)
 
-              Text('华为开发者 · 个人商用')
-                .fontSize(FontSizes.BODY_SMALL)
-                .fontColor(Colors.TEXT_SECONDARY)
-                .fontFamily(Fonts.CN)
-                .margin({ top: 4 })
+              if (this.userSubtitle.length > 0) {
+                Text(this.userSubtitle)
+                  .fontSize(FontSizes.BODY_SMALL)
+                  .fontColor(Colors.TEXT_SECONDARY)
+                  .fontFamily(Fonts.CN)
+                  .margin({ top: 4 })
+              }
             }
             .layoutWeight(1)
             .margin({ left: Spacing.CONTENT_GAP })
+
+            SymbolGlyph($r('sys.symbol.chevron_right'))
+              .fontSize(16)
+              .fontColor([Colors.TEXT_MUTED])
           }
           .width('100%')
-          .padding({ left: 24, right: 24, top: 24 })
-
-          // 分割线
-          Divider()
-            .color(Colors.DIVIDER_DARK)
-            .strokeWidth(0.5)
-            .margin({ left: 24, right: 24, top: 16, bottom: 16 })
-
-          // 统计数字行
-          Row() {
-            Column() {
-              Text(this.viewModel.rentingProperties.length.toString())
-                .fontSize(22)
-                .fontColor(Colors.PRIMARY)
-                .fontFamily(Fonts.NUMBER)
-                .fontWeight(FontWeight.Bold)
-
-              Text('在租房源')
-                .fontSize(FontSizes.CAPTION)
-                .fontColor(Colors.TEXT_SECONDARY)
-                .fontFamily(Fonts.CN)
-                .margin({ top: 2 })
-            }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Center)
-
-            Column()
-              .width(1)
-              .height(40)
-              .backgroundColor(Colors.DIVIDER_DARK)
-
-            Column() {
-              Text(this.viewModel.expiringCount.toString())
-                .fontSize(22)
-                .fontColor(Colors.WARNING)
-                .fontFamily(Fonts.NUMBER)
-                .fontWeight(FontWeight.Bold)
-
-              Text('即将到期')
-                .fontSize(FontSizes.CAPTION)
-                .fontColor(Colors.TEXT_SECONDARY)
-                .fontFamily(Fonts.CN)
-                .margin({ top: 2 })
-            }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Center)
-
-            Column()
-              .width(1)
-              .height(40)
-              .backgroundColor(Colors.DIVIDER_DARK)
-
-            Column() {
-              Text('12')
-                .fontSize(22)
-                .fontColor(Colors.SUCCESS)
-                .fontFamily(Fonts.NUMBER)
-                .fontWeight(FontWeight.Bold)
-
-              Text('历史房源')
-                .fontSize(FontSizes.CAPTION)
-                .fontColor(Colors.TEXT_SECONDARY)
-                .fontFamily(Fonts.CN)
-                .margin({ top: 2 })
-            }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Center)
-          }
-          .width('100%')
-          .padding({ left: 24, right: 24, bottom: 24 })
+          .padding({ left: 24, right: 24, top: 24, bottom: 24 })
+          .alignItems(VerticalAlign.Center)
         }
         .width('100%')
         .backgroundColor(Colors.CARD_BG)
@@ -149,8 +125,38 @@ export struct MyContent {
           offsetY: Shadows.CARD.offsetY
         })
         .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: 12 })
+        .onClick(() => {
+          this.navPathStack.pushPathByName('ProfileEdit', null);
+        })
 
-        // ===== 菜单卡片 1 =====
+        Column() {
+          MenuItemRow({
+            iconName: 'sys.symbol.bell',
+            label: '租约到期提醒',
+            onAction: () => {
+              this.navPathStack.pushPathByName('Reminder', null);
+            }
+          })
+          Divider().color(Colors.DIVIDER_LIGHT).strokeWidth(0.5).margin({ left: 20, right: 20 })
+          MenuItemRow({
+            iconName: 'sys.symbol.bell_badge',
+            label: '通知设置',
+            onAction: () => {
+              this.navPathStack.pushPathByName('Notification', null);
+            }
+          })
+        }
+        .width('100%')
+        .backgroundColor(Colors.CARD_BG)
+        .borderRadius(Radius.CARD)
+        .shadow({
+          radius: Shadows.LIST_ITEM.radius,
+          color: Shadows.LIST_ITEM.color,
+          offsetX: Shadows.LIST_ITEM.offsetX,
+          offsetY: Shadows.LIST_ITEM.offsetY
+        })
+        .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
+
         Column() {
           MenuItemRow({
             iconName: 'sys.symbol.tray_and_arrow_down',
@@ -175,6 +181,14 @@ export struct MyContent {
               this.navPathStack.pushPathByName('DataExport', null);
             }
           })
+          Divider().color(Colors.DIVIDER_LIGHT).strokeWidth(0.5).margin({ left: 20, right: 20 })
+          MenuItemRow({
+            iconName: 'sys.symbol.trash',
+            label: '清除数据',
+            onAction: () => {
+              this.showClearDataDialog();
+            }
+          })
         }
         .width('100%')
         .backgroundColor(Colors.CARD_BG)
@@ -187,16 +201,35 @@ export struct MyContent {
         })
         .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
 
-        // ===== 菜单卡片 2 =====
         Column() {
           MenuItemRow({
-            iconName: 'sys.symbol.gear',
-            label: '设置',
+            iconName: 'sys.symbol.lock',
+            label: '隐私政策',
             onAction: () => {
-              this.navPathStack.pushPathByName('Settings', null);
+              this.navPathStack.pushPathByName('Privacy', null);
             }
           })
           Divider().color(Colors.DIVIDER_LIGHT).strokeWidth(0.5).margin({ left: 20, right: 20 })
+          MenuItemRow({
+            iconName: 'sys.symbol.doc_text',
+            label: '用户协议',
+            onAction: () => {
+              this.navPathStack.pushPathByName('Agreement', null);
+            }
+          })
+        }
+        .width('100%')
+        .backgroundColor(Colors.CARD_BG)
+        .borderRadius(Radius.CARD)
+        .shadow({
+          radius: Shadows.LIST_ITEM.radius,
+          color: Shadows.LIST_ITEM.color,
+          offsetX: Shadows.LIST_ITEM.offsetX,
+          offsetY: Shadows.LIST_ITEM.offsetY
+        })
+        .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
+
+        Column() {
           MenuItemRow({
             iconName: 'sys.symbol.info',
             label: '关于',
@@ -216,7 +249,6 @@ export struct MyContent {
         })
         .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: 16 })
 
-        // 页脚
         Text('租房台账 v1.0 · 华为鸿蒙元服务')
           .fontSize(FontSizes.CAPTION)
           .fontColor(Colors.TEXT_MUTED)

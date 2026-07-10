@@ -58,6 +58,12 @@ export class AddPropertyViewModel {
       data.id = Date.now().toString();
       if (this.isCandidateMode) {
         data.status = 'candidate';
+      } else {
+        data.status = 'renting';
+        const renting: PropertyInfo[] = this.repository.getRentingProperties();
+        for (const p of renting) {
+          await this.repository.demoteRenting(p.id);
+        }
       }
       await this.repository.addProperty(data);
     }
@@ -66,5 +72,9 @@ export class AddPropertyViewModel {
 
   async deleteProperty(id: string): Promise<void> {
     await this.repository.deleteProperty(id);
+  }
+
+  async demoteRenting(id: string): Promise<void> {
+    await this.repository.demoteRenting(id);
   }
 }

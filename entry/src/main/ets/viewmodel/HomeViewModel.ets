@@ -28,4 +28,14 @@ export class HomeViewModel {
     await this.repository.promoteCandidate(id);
     await this.loadData();
   }
+
+  async demoteRenting(id: string): Promise<void> {
+    await this.repository.demoteRenting(id);
+    await this.loadData();
+  }
+
+  async batchDeleteCandidates(ids: string[]): Promise<void> {
+    await this.repository.batchDelete(ids);
+    await this.loadData();
+  }
 }

@@ -9,8 +9,10 @@ import { Colors, Fonts, FontSizes, Dimensions, Radius, Shadows, Spacing } from '
 import { promptAction } from '@kit.ArkUI';
 import { HeaderBar } from '../components/HeaderBar';
 import { TagCategory } from '../model/TagModel';
-import { PropertyInfo, PropertyIdParam, SaveResult, DeleteResult } from '../model/PropertyModel';
+import { PropertyInfo, PropertyIdParam, SaveResult, DeleteResult, MapPickerResult } from '../model/PropertyModel';
 import { AddPropertyViewModel } from '../viewmodel/AddPropertyViewModel';
+import { photoAccessHelper } from '@kit.MediaLibraryKit';
+import { fileIo } from '@kit.CoreFileKit';
 
 @Builder
 export function AddPropertyBuilder() {
@@ -28,6 +30,9 @@ export struct AddPropertyPage {
   @Local endDate: string = '';
   @Local notes: string = '';
   @Local renewalStatus: string = '';
+  @Local latitude: number = 0;
+  @Local longitude: number = 0;
+  @Local imageUris: string[] = [];
   @Local tagCategories: TagCategory[] = [
     new TagCategory('付款方式', Colors.TAG_PAYMENT_BG, Colors.TAG_PAYMENT_TEXT,
       ['押一付三', '半年付'], []),
@@ -59,6 +64,9 @@ export struct AddPropertyPage {
       this.endDate = property.endDate;
       this.notes = property.notes;
       this.renewalStatus = property.renewalStatus;
+      this.latitude = property.latitude;
+      this.longitude = property.longitude;
+      this.imageUris = [...property.imageUrls];
     }
   }
 
@@ -75,6 +83,44 @@ export struct AddPropertyPage {
     return selected;
   }
 
+  private async pickImage(): Promise<void> {
+    try {
+      const options: photoAccessHelper.PhotoSelectOptions = new photoAccessHelper.PhotoSelectOptions();
+      options.MIMEType = photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE;
+      options.maxSelectNumber = 9 - this.imageUris.length;
+      options.isPhotoTakingSupported = true;
+      const picker: photoAccessHelper.PhotoViewPicker = new photoAccessHelper.PhotoViewPicker();
+      const result: photoAccessHelper.PhotoSelectResult = await picker.select(options);
+      if (result.photoUris && result.photoUris.length > 0) {
+        for (const srcUri of result.photoUris) {
+          await this.copyImageToSandbox(srcUri);
+        }
+      }
+    } catch (_e) {
+      promptAction.showToast({ message: '选择图片失败', duration: 2000 });
+    }
+  }
+
+  private async copyImageToSandbox(srcUri: string): Promise<void> {
+    try {
+      const context: Context = this.getUIContext().getHostContext() as Context;
+      const fileName: string = 'property_' + Date.now() + '.jpg';
+      const destPath: string = context.filesDir + '/' + fileName;
+      const srcFile: fileIo.File = fileIo.openSync(srcUri, fileIo.OpenMode.READ_ONLY);
+      fileIo.copyFileSync(srcFile.fd, destPath);
+      fileIo.closeSync(srcFile);
+      this.imageUris = [...this.imageUris, destPath];
+    } catch (_e) {
+      promptAction.showToast({ message: '保存图片失败', duration: 2000 });
+    }
+  }
+
+  private removeImage(index: number): void {
+    const newList: string[] = [...this.imageUris];
+    newList.splice(index, 1);
+    this.imageUris = newList;
+  }
+
   /** 保存房源 */
   private saveProperty(): void {
     const property: PropertyInfo = new PropertyInfo();
@@ -86,11 +132,13 @@ export struct AddPropertyPage {
     property.deposit = parseFloat(this.deposit) || 0;
     property.startDate = this.startDate;
     property.endDate = this.endDate;
-    property.status = 'renting';
+    property.status = this.viewModel.isCandidateMode ? 'candidate' : 'renting';
     property.billsPaid = 0;
-    property.imageUrl = '';
+    property.imageUrls = [...this.imageUris];
     property.notes = this.notes;
     property.renewalStatus = this.renewalStatus;
+    property.latitude = this.latitude;
+    property.longitude = this.longitude;
 
     this.viewModel.saveProperty(property).then((success: boolean) => {
       if (success) {
@@ -101,7 +149,7 @@ export struct AddPropertyPage {
         const saveResult: SaveResult = new SaveResult();
         saveResult.saved = true;
         this.refreshFlag++;
-        this.navPathStack.pop(saveResult);
+        this.navPathStack.clear();
       } else {
         this.validationError = this.viewModel.validationError;
       }
@@ -118,6 +166,13 @@ export struct AddPropertyPage {
           showBack: true,
           onBack: () => {
             this.navPathStack.pop();
+          },
+          rightContent: (): void => {
+            if (this.viewModel.isEditMode && !this.viewModel.isCandidateMode) {
+              this.DemoteRightContent()
+            } else {
+              this.DefaultRightContent()
+            }
           }
         })
 
@@ -160,6 +215,32 @@ export struct AddPropertyPage {
                   .fontFamily(Fonts.CN)
                   .placeholderColor(Colors.TEXT_MUTED)
                   .onChange((v: string) => { this.address = v })
+
+                Row() {
+                  SymbolGlyph($r('sys.symbol.map'))
+                    .fontSize(18)
+                    .fontColor([Colors.PRIMARY])
+                }
+                .width(40)
+                .height(40)
+                .backgroundColor(Colors.PRIMARY_LIGHT)
+                .borderRadius(8)
+                .justifyContent(FlexAlign.Center)
+                .onClick(() => {
+                  this.navPathStack.pushPathByName('MapPicker', null, (popResult: Object | undefined) => {
+                    if (popResult) {
+                      const mapResult: MapPickerResult = popResult as MapPickerResult;
+                      this.latitude = mapResult.latitude;
+                      this.longitude = mapResult.longitude;
+                      if (mapResult.address && mapResult.address.length > 0) {
+                        this.address = mapResult.address;
+                      }
+                      if (mapResult.siteName && mapResult.siteName.length > 0 && this.communityName.length === 0) {
+                        this.communityName = mapResult.siteName;
+                      }
+                    }
+                  });
+                })
               }
               .width('100%')
               .height(48)
@@ -167,6 +248,73 @@ export struct AddPropertyPage {
               .borderRadius(Radius.CARD_SM)
               .padding({ left: Spacing.CARD_PADDING_SM, right: Spacing.CARD_PADDING_SM })
               .alignItems(VerticalAlign.Center)
+            }
+
+            Column({ space: 8 }) {
+              Text('房屋图片')
+                .fontSize(FontSizes.BODY)
+                .fontColor(Colors.TEXT_PRIMARY)
+                .fontFamily(Fonts.CN)
+                .fontWeight(FontWeight.Medium)
+                .alignSelf(ItemAlign.Start)
+
+              Flex({ wrap: FlexWrap.Wrap }) {
+                ForEach(this.imageUris, (uri: string, index: number) => {
+                  Stack() {
+                    Image(uri)
+                      .width(100)
+                      .height(100)
+                      .objectFit(ImageFit.Cover)
+                      .borderRadius(Radius.CARD_SM)
+
+                    Row() {
+                      SymbolGlyph($r('sys.symbol.xmark'))
+                        .fontSize(12)
+                        .fontColor([Colors.TEXT_WHITE])
+                    }
+                    .width(24)
+                    .height(24)
+                    .backgroundColor('rgba(0,0,0,0.5)')
+                    .borderRadius(12)
+                    .justifyContent(FlexAlign.Center)
+                    .position({ x: '100%', y: 0 })
+                    .translate({ x: -8, y: 4 })
+                    .onClick(() => {
+                      this.removeImage(index);
+                    })
+                  }
+                  .width(100)
+                  .height(100)
+                  .margin({ right: 8, bottom: 8 })
+                }, (item: string, idx: number) => idx.toString())
+
+                if (this.imageUris.length < 9) {
+                  Row() {
+                    SymbolGlyph($r('sys.symbol.camera'))
+                      .fontSize(24)
+                      .fontColor([Colors.PRIMARY])
+
+                    Column() {
+                      Text('添加图片')
+                        .fontSize(10)
+                        .fontColor(Colors.TEXT_SECONDARY)
+                        .fontFamily(Fonts.CN)
+                        .margin({ top: 2 })
+                    }
+                    .margin({ left: 6 })
+                  }
+                  .width(100)
+                  .height(100)
+                  .backgroundColor(Colors.PRIMARY_LIGHT)
+                  .borderRadius(Radius.CARD_SM)
+                  .justifyContent(FlexAlign.Center)
+                  .margin({ right: 8, bottom: 8 })
+                  .onClick(() => {
+                    this.pickImage();
+                  })
+                }
+              }
+              .width('100%')
             }
 
             // ===== 费用与租期 =====
@@ -473,6 +621,44 @@ export struct AddPropertyPage {
     .layoutWeight(1)
   }
 
+  @Builder
+  DefaultRightContent() {
+    Row().width(24)
+  }
+
+  @Builder
+  DemoteRightContent() {
+    Text('取消选定')
+      .fontSize(FontSizes.BODY)
+      .fontColor(Colors.WARNING)
+      .fontFamily(Fonts.CN)
+      .fontWeight(FontWeight.Medium)
+      .onClick(() => {
+        this.showDemoteDialog();
+      })
+  }
+
+  private showDemoteDialog(): void {
+    AlertDialog.show({
+      message: '取消选定后，该房源将退回备选列表，租期信息将被清除。',
+      primaryButton: {
+        value: '确认取消',
+        action: () => {
+          if (this.viewModel.editPropertyId) {
+            this.viewModel.demoteRenting(this.viewModel.editPropertyId).then(() => {
+              this.refreshFlag++;
+              this.navPathStack.pop();
+            });
+          }
+        }
+      },
+      secondaryButton: {
+        value: '返回',
+        action: () => {}
+      }
+    });
+  }
+
   private showDeleteDialog(): void {
     AlertDialog.show({
       message: '确认删除此房源？删除后无法恢复。',
@@ -480,13 +666,27 @@ export struct AddPropertyPage {
         value: '确认删除',
         action: () => {
           if (this.viewModel.editPropertyId) {
-            this.viewModel.deleteProperty(this.viewModel.editPropertyId).then(() => {
-              const delResult: DeleteResult = new DeleteResult();
-              delResult.deleted = true;
-              delResult.propertyId = this.viewModel.editPropertyId;
-              this.refreshFlag++;
-              this.navPathStack.pop(delResult);
-            });
+            const property: PropertyInfo | undefined = this.viewModel.loadProperty();
+            const deleteId: string = this.viewModel.editPropertyId;
+            if (property && (property.status === 'renting' || property.status === 'expiring')) {
+              this.viewModel.demoteRenting(deleteId).then(() => {
+                this.viewModel.deleteProperty(deleteId).then(() => {
+                  const delResult: DeleteResult = new DeleteResult();
+                  delResult.deleted = true;
+                  delResult.propertyId = deleteId;
+                  this.refreshFlag++;
+                  this.navPathStack.pop(delResult);
+                });
+              });
+            } else {
+              this.viewModel.deleteProperty(deleteId).then(() => {
+                const delResult: DeleteResult = new DeleteResult();
+                delResult.deleted = true;
+                delResult.propertyId = deleteId;
+                this.refreshFlag++;
+                this.navPathStack.pop(delResult);
+              });
+            }
           }
         }
       },

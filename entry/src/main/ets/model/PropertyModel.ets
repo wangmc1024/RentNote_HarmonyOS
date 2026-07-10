@@ -18,9 +18,36 @@ export class PropertyInfo {
   @Trace endDate: string = '';
   @Trace status: string = 'renting';
   @Trace billsPaid: number = 0;
-  @Trace imageUrl: string = '';
+  @Trace imageUrls: string[] = [];
   @Trace notes: string = '';
   @Trace renewalStatus: string = '';
+  @Trace latitude: number = 0;
+  @Trace longitude: number = 0;
+
+  getFirstImage(): string {
+    return this.imageUrls.length > 0 ? this.imageUrls[0] : '';
+  }
+
+  clone(): PropertyInfo {
+    const p: PropertyInfo = new PropertyInfo();
+    p.id = this.id;
+    p.name = this.name;
+    p.address = this.address;
+    p.district = this.district;
+    p.tags = [...this.tags];
+    p.monthlyRent = this.monthlyRent;
+    p.deposit = this.deposit;
+    p.startDate = this.startDate;
+    p.endDate = this.endDate;
+    p.status = this.status;
+    p.billsPaid = this.billsPaid;
+    p.imageUrls = [...this.imageUrls];
+    p.notes = this.notes;
+    p.renewalStatus = this.renewalStatus;
+    p.latitude = this.latitude;
+    p.longitude = this.longitude;
+    return p;
+  }
 
   toDTO(): PropertyDTO {
     const dto: PropertyDTO = new PropertyDTO();
@@ -35,9 +62,11 @@ export class PropertyInfo {
     dto.endDate = this.endDate;
     dto.status = this.status;
     dto.billsPaid = this.billsPaid;
-    dto.imageUrl = this.imageUrl;
+    dto.imageUrls = this.imageUrls;
     dto.notes = this.notes;
     dto.renewalStatus = this.renewalStatus;
+    dto.latitude = this.latitude;
+    dto.longitude = this.longitude;
     return dto;
   }
 }
@@ -54,12 +83,12 @@ export class PropertyDTO {
   endDate: string = '';
   status: string = 'renting';
   billsPaid: number = 0;
-  imageUrl: string = '';
+  imageUrls: string[] = [];
   notes: string = '';
   renewalStatus: string = '';
+  latitude: number = 0;
+  longitude: number = 0;
 }
-
-/** 统计概览数据 */
 @ObservedV2
 export class StatisticsOverview {
   @Trace yearlyExpense: number = 0;
@@ -99,4 +128,24 @@ export class SaveResult {
 export class DeleteResult {
   deleted: boolean = false;
   propertyId: string = '';
+}
+
+export class MapPickerResult {
+  latitude: number = 0;
+  longitude: number = 0;
+  address: string = '';
+  siteName: string = '';
+}
+
+export class UserProfileDTO {
+  name: string = '';
+  subtitle: string = '';
+  avatarUri: string = '';
+}
+
+@ObservedV2
+export class UserProfile {
+  @Trace name: string = '';
+  @Trace subtitle: string = '';
+  @Trace avatarUri: string = '';
 }

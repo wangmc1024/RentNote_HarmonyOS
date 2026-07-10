@@ -9,6 +9,9 @@ import { Colors, Fonts, FontSizes, Dimensions, Radius, Shadows, Spacing, getTagT
 import { HeaderBar } from '../components/HeaderBar';
 import { PropertyDetailViewModel } from '../viewmodel/PropertyDetailViewModel';
 import { PropertyInfo, PropertyIdParam, DeleteResult } from '../model/PropertyModel';
+import { PropertyRepository } from '../repository/PropertyRepository';
+import { MapComponent, mapCommon, map } from '@kit.MapKit';
+import { AsyncCallback } from '@kit.BasicServicesKit';
 
 @Builder
 export function PropertyDetailBuilder() {
@@ -20,9 +23,48 @@ export struct PropertyDetailPage {
   @Local viewModel: PropertyDetailViewModel = new PropertyDetailViewModel();
   @Local propertyId: string = '';
   @Consumer('navPathStack') navPathStack: NavPathStack = new NavPathStack();
+  @Consumer('refreshFlag') refreshFlag: number = 0;
+
+  private mapOptions?: mapCommon.MapOptions;
+  private mapCallback?: AsyncCallback<map.MapComponentController>;
+  private mapController?: map.MapComponentController;
 
   aboutToAppear(): void {
-    // 通过 onReady 获取参数后加载房源数据
+    this.mapOptions = {
+      position: {
+        target: {
+          latitude: 39.904,
+          longitude: 116.407
+        },
+        zoom: 14
+      }
+    };
+    this.mapCallback = async (err: BusinessError | null, mapController: map.MapComponentController) => {
+      if (!err) {
+        this.mapController = mapController;
+        this.addPropertyMarker();
+      }
+    };
+  }
+
+  private addPropertyMarker(): void {
+    if (!this.mapController || !this.viewModel.property) {
+      return;
+    }
+    const p: PropertyInfo = this.viewModel.property as PropertyInfo;
+    if (p.latitude !== 0 && p.longitude !== 0) {
+      const markerOptions: mapCommon.MarkerOptions = {
+        position: {
+          latitude: p.latitude,
+          longitude: p.longitude
+        },
+        clickable: false,
+        anchorU: 0.5,
+        anchorV: 1,
+        title: p.name
+      };
+      this.mapController.addMarker(markerOptions);
+    }
   }
 
   build() {
@@ -51,7 +93,22 @@ export struct PropertyDetailPage {
       const paramObj: PropertyIdParam = param as PropertyIdParam;
       if (paramObj.propertyId) {
         this.propertyId = paramObj.propertyId;
-        this.viewModel.loadProperty(this.propertyId);
+        this.viewModel.loadProperty(this.propertyId).then(() => {
+          if (this.viewModel.property) {
+            const p: PropertyInfo = this.viewModel.property as PropertyInfo;
+            if (p.latitude !== 0 && p.longitude !== 0) {
+              this.mapOptions = {
+                position: {
+                  target: {
+                    latitude: p.latitude,
+                    longitude: p.longitude
+                  },
+                  zoom: 14
+                }
+              };
+            }
+          }
+        });
       }
     })
     .hideTitleBar(true)
@@ -112,24 +169,55 @@ export struct PropertyDetailPage {
         .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
         .margin({ top: 12 })
 
-        // ===== 地图卡片 =====
-        Column() {
-          SymbolGlyph($r('sys.symbol.building'))
-            .fontSize(36)
-            .fontColor([Colors.PRIMARY])
-
-          Text('地图位置')
-            .fontSize(FontSizes.BODY_SMALL)
-            .fontColor(Colors.TEXT_SECONDARY)
-            .fontFamily(Fonts.CN)
-            .margin({ top: 4 })
+        if (property.imageUrls.length > 0) {
+          Column() {
+            Swiper() {
+              ForEach(property.imageUrls, (uri: string, index: number) => {
+                Image(uri)
+                  .width('100%')
+                  .height(200)
+                  .objectFit(ImageFit.Cover)
+              }, (item: string, idx: number) => idx.toString())
+            }
+            .width('100%')
+            .height(200)
+            .autoPlay(false)
+            .indicator(property.imageUrls.length > 1)
+          }
+          .width('100%')
+          .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
         }
-        .width('100%')
-        .height(Dimensions.MAP_CARD_HEIGHT)
-        .backgroundColor(Colors.PRIMARY_LIGHT)
-        .borderRadius(Radius.CARD)
-        .justifyContent(FlexAlign.Center)
-        .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
+
+        // ===== 地图卡片 =====
+        if (property.latitude !== 0 && property.longitude !== 0) {
+          Column() {
+            MapComponent({ mapOptions: this.mapOptions, mapCallback: this.mapCallback })
+              .width('100%')
+              .height(Dimensions.MAP_CARD_HEIGHT)
+              .borderRadius(Radius.CARD)
+              .clip(true)
+          }
+          .width('100%')
+          .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
+        } else {
+          Column() {
+            SymbolGlyph($r('sys.symbol.building'))
+              .fontSize(36)
+              .fontColor([Colors.PRIMARY])
+
+            Text('暂无位置信息')
+              .fontSize(FontSizes.BODY_SMALL)
+              .fontColor(Colors.TEXT_SECONDARY)
+              .fontFamily(Fonts.CN)
+              .margin({ top: 4 })
+          }
+          .width('100%')
+          .height(Dimensions.MAP_CARD_HEIGHT)
+          .backgroundColor(Colors.PRIMARY_LIGHT)
+          .borderRadius(Radius.CARD)
+          .justifyContent(FlexAlign.Center)
+          .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
+        }
 
         // ===== 租期信息卡片 =====
         Column() {
@@ -261,10 +349,24 @@ export struct PropertyDetailPage {
       primaryButton: {
         value: '确认删除',
         action: () => {
-          this.viewModel.deleteProperty(id).then(() => {
-            const deleteResult: DeleteResult = { deleted: true, propertyId: id };
-            this.navPathStack.pop({ result: deleteResult });
-          });
+          const repo: PropertyRepository = PropertyRepository.getInstance();
+          const property: PropertyInfo | undefined = repo.getPropertyById(id);
+          const doDelete: () => void = () => {
+            this.viewModel.deleteProperty(id).then(() => {
+              this.refreshFlag++;
+              const deleteResult: DeleteResult = new DeleteResult();
+              deleteResult.deleted = true;
+              deleteResult.propertyId = id;
+              this.navPathStack.pop(deleteResult);
+            });
+          };
+          if (property && (property.status === 'renting' || property.status === 'expiring')) {
+            repo.demoteRenting(id).then(() => {
+              doDelete();
+            });
+          } else {
+            doDelete();
+          }
         }
       },
       secondaryButton: {

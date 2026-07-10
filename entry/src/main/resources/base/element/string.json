@@ -83,6 +83,10 @@
     {
       "name": "route_Agreement",
       "value": "用户协议"
+    },
+    {
+      "name": "location_reason",
+      "value": "用于在地图上显示房源位置和选择房源地址"
     }
   ]
 }

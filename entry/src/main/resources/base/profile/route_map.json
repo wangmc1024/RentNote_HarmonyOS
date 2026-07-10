@@ -95,6 +95,22 @@
       "data": {
         "description": "用户协议"
       }
+    },
+    {
+      "name": "MapPicker",
+      "pageSourceFile": "src/main/ets/pages/MapPickerPage.ets",
+      "buildFunction": "MapPickerBuilder",
+      "data": {
+        "description": "地图选点"
+      }
+    },
+    {
+      "name": "ProfileEdit",
+      "pageSourceFile": "src/main/ets/pages/ProfileEditPage.ets",
+      "buildFunction": "ProfileEditBuilder",
+      "data": {
+        "description": "编辑个人资料"
+      }
     }
   ]
 }
