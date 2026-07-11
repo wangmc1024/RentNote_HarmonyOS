@@ -132,14 +132,6 @@ export struct MyContent {
         Column() {
           MenuItemRow({
             iconName: 'sys.symbol.bell',
-            label: '租约到期提醒',
-            onAction: () => {
-              this.navPathStack.pushPathByName('Reminder', null);
-            }
-          })
-          Divider().color(Colors.DIVIDER_LIGHT).strokeWidth(0.5).margin({ left: 20, right: 20 })
-          MenuItemRow({
-            iconName: 'sys.symbol.bell_badge',
             label: '通知设置',
             onAction: () => {
               this.navPathStack.pushPathByName('Notification', null);

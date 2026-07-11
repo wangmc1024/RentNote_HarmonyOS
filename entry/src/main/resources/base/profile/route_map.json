@@ -25,14 +25,6 @@
       }
     },
     {
-      "name": "Reminder",
-      "pageSourceFile": "src/main/ets/pages/ReminderPage.ets",
-      "buildFunction": "ReminderBuilder",
-      "data": {
-        "description": "租约到期提醒"
-      }
-    },
-    {
       "name": "Notification",
       "pageSourceFile": "src/main/ets/pages/NotificationPage.ets",
       "buildFunction": "NotificationBuilder",

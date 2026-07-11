@@ -45,10 +45,6 @@
       "value": "显示本月租金和到期提醒"
     },
     {
-      "name": "route_Reminder",
-      "value": "租约到期提醒"
-    },
-    {
       "name": "route_Notification",
       "value": "通知设置"
     },
