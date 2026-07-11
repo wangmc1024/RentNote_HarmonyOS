@@ -12,6 +12,7 @@ import { TagCategory } from '../model/TagModel';
 import { PropertyInfo, PropertyIdParam, SaveResult, DeleteResult, MapPickerResult } from '../model/PropertyModel';
 import { AddPropertyViewModel } from '../viewmodel/AddPropertyViewModel';
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
+import { fileIo as fs, fileUri } from '@kit.CoreFileKit';
 
 @Builder
 export function AddPropertyBuilder() {
@@ -105,12 +106,47 @@ export struct AddPropertyPage {
       const picker: photoAccessHelper.PhotoViewPicker = new photoAccessHelper.PhotoViewPicker();
       const result: photoAccessHelper.PhotoSelectResult = await picker.select(options);
       if (result.photoUris && result.photoUris.length > 0) {
-        this.imageUris = [...this.imageUris, ...result.photoUris];
+        const sandboxUris: string[] = [];
+        const context: Context = this.getUIContext().getHostContext() as Context;
+        const dir: string = context.filesDir + '/property_images';
+        if (!fs.accessSync(dir)) {
+          fs.mkdirSync(dir);
+        }
+        for (const pickerUri of result.photoUris) {
+          const fileName: string = 'img_' + Date.now().toString() + '_' + Math.floor(Math.random() * 10000).toString() + '.jpg';
+          const destPath: string = dir + '/' + fileName;
+          if (this.copyToSandbox(pickerUri, destPath)) {
+            sandboxUris.push(fileUri.getUriFromPath(destPath));
+          }
+        }
+        if (sandboxUris.length > 0) {
+          this.imageUris = [...this.imageUris, ...sandboxUris];
+        }
       }
     } catch (_e) {
       try {
         this.getUIContext().getPromptAction().showToast({ message: '选择图片失败', duration: 2000 });
       } catch (_ee) {
+      }
+    }
+  }
+
+  private copyToSandbox(srcUri: string, destPath: string): boolean {
+    let srcFile: fs.File | null = null;
+    let destFile: fs.File | null = null;
+    try {
+      srcFile = fs.openSync(srcUri, fs.OpenMode.READ_ONLY);
+      destFile = fs.openSync(destPath, fs.OpenMode.CREATE | fs.OpenMode.READ_WRITE);
+      fs.copyFileSync(srcFile.fd, destFile.fd);
+      return true;
+    } catch (_e) {
+      return false;
+    } finally {
+      if (srcFile) {
+        try { fs.closeSync(srcFile); } catch (_e) {}
+      }
+      if (destFile) {
+        try { fs.closeSync(destFile); } catch (_e) {}
       }
     }
   }

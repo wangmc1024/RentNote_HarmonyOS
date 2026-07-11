@@ -3,6 +3,7 @@ import { HeaderBar } from '../components/HeaderBar';
 import { UserProfile } from '../model/PropertyModel';
 import { PropertyRepository } from '../repository/PropertyRepository';
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
+import { fileIo as fs, fileUri } from '@kit.CoreFileKit';
 
 @Builder
 export function ProfileEditBuilder() {
@@ -37,16 +38,40 @@ export struct ProfileEditPage {
     });
   }
 
-  private pickAvatar(): void {
+  private async pickAvatar(): Promise<void> {
     const options: photoAccessHelper.PhotoSelectOptions = new photoAccessHelper.PhotoSelectOptions();
     options.MIMEType = photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE;
     options.maxSelectNumber = 1;
     const photoPicker: photoAccessHelper.PhotoViewPicker = new photoAccessHelper.PhotoViewPicker();
-    photoPicker.select(options).then((result: photoAccessHelper.PhotoSelectResult) => {
+    try {
+      const result: photoAccessHelper.PhotoSelectResult = await photoPicker.select(options);
       if (result.photoUris && result.photoUris.length > 0) {
-        this.avatarUri = result.photoUris[0];
+        const context: Context = this.getUIContext().getHostContext() as Context;
+        const dir: string = context.filesDir + '/profile_images';
+        if (!fs.accessSync(dir)) {
+          fs.mkdirSync(dir);
+        }
+        const fileName: string = 'avatar_' + Date.now().toString() + '.jpg';
+        const destPath: string = dir + '/' + fileName;
+        let srcFile: fs.File | null = null;
+        let destFile: fs.File | null = null;
+        try {
+          srcFile = fs.openSync(result.photoUris[0], fs.OpenMode.READ_ONLY);
+          destFile = fs.openSync(destPath, fs.OpenMode.CREATE | fs.OpenMode.READ_WRITE);
+          fs.copyFileSync(srcFile.fd, destFile.fd);
+          this.avatarUri = fileUri.getUriFromPath(destPath);
+        } catch (_e) {
+        } finally {
+          if (srcFile) {
+            try { fs.closeSync(srcFile); } catch (_e) {}
+          }
+          if (destFile) {
+            try { fs.closeSync(destFile); } catch (_e) {}
+          }
+        }
       }
-    }).catch(() => {});
+    } catch (_e) {
+    }
   }
 
   build() {

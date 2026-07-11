@@ -8,6 +8,7 @@ export struct MyContent {
   @Local userName: string = '';
   @Local userSubtitle: string = '';
   @Local avatarUri: string = '';
+  @Local dataSize: string = '0.00 MB';
   @Consumer('navPathStack') navPathStack: NavPathStack = new NavPathStack();
   @Consumer('refreshFlag') refreshFlag: number = 0;
 
@@ -27,6 +28,7 @@ export struct MyContent {
     this.userName = profile.name;
     this.userSubtitle = profile.subtitle;
     this.avatarUri = profile.avatarUri;
+    this.dataSize = this.repository.getDataSizeMB();
   }
 
   private showClearDataDialog(): void {
@@ -168,6 +170,8 @@ export struct MyContent {
           MenuItemRow({
             iconName: 'sys.symbol.trash',
             label: '清除数据',
+            value: this.dataSize,
+            showArrow: false,
             onAction: () => {
               this.showClearDataDialog();
             }

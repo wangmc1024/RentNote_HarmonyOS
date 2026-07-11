@@ -24,8 +24,8 @@ export struct CandidateContent {
   private markerPropertyIds: string[] = [];
 
   @Monitor('refreshFlag')
-  onRefreshFlagChange(): void {
-    this.viewModel.loadData();
+  async onRefreshFlagChange(): Promise<void> {
+    await this.viewModel.loadData();
     this.updateMarkers();
   }
 
@@ -265,7 +265,7 @@ export struct CandidateContent {
             }
             .width('100%')
 
-            MapComponent({ mapOptions: this.mapOptions, mapCallback: this.mapCallback })
+            MapComponent({ mapOptions: this.mapOptions, mapCallback: this.mapCallback, customInfoWindow: this.customInfoWindowBuilder })
               .width('100%')
               .layoutWeight(1)
           }
@@ -277,7 +277,7 @@ export struct CandidateContent {
               Column() {
                 if (this.hasGeoProperties()) {
                   Stack() {
-                    MapComponent({ mapOptions: this.mapOptions, mapCallback: this.mapCallback })
+                    MapComponent({ mapOptions: this.mapOptions, mapCallback: this.mapCallback, customInfoWindow: this.customInfoWindowBuilder })
                       .width('100%')
                       .height(Dimensions.MAP_CARD_HEIGHT)
                       .borderRadius(Radius.CARD)
@@ -375,7 +375,7 @@ export struct CandidateContent {
                         this.candidateSwipeAction(property.id)
                       }
                     } })
-                  }, (item: PropertyInfo) => item.id)
+                  }, (item: PropertyInfo) => item.id + '_' + item.imageUrls.length + '_' + item.notes.length)
                 }
                 .width('100%')
                 .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
@@ -529,6 +529,56 @@ export struct CandidateContent {
     this.selectedMarkerPropertyName = '';
     this.selectedMarkerDistrict = '';
     this.selectedMarkerImage = '';
+  }
+
+  private getMarkerPropertyImage(marker: map.Marker): string {
+    const markerIndex: number = this.addedMarkers.indexOf(marker);
+    if (markerIndex >= 0 && markerIndex < this.markerPropertyIds.length) {
+      const prop: PropertyInfo | null = this.getPropertyById(this.markerPropertyIds[markerIndex]);
+      if (prop) {
+        return prop.getFirstImage();
+      }
+    }
+    return '';
+  }
+
+  @Builder
+  customInfoWindowBuilder($$: map.MarkerDelegate) {
+    if ($$.marker) {
+      Column() {
+        Row() {
+          if (this.getMarkerPropertyImage($$.marker).length > 0) {
+            Image(this.getMarkerPropertyImage($$.marker))
+              .width(36)
+              .height(36)
+              .objectFit(ImageFit.Cover)
+              .borderRadius(Radius.CARD_SM)
+              .margin({ right: 8 })
+          }
+          Column() {
+            Text($$.marker.getTitle())
+              .fontSize(FontSizes.CAPTION)
+              .fontColor(Colors.TEXT_PRIMARY)
+              .fontFamily(Fonts.CN)
+              .fontWeight(FontWeight.Medium)
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+            if ($$.marker.getSnippet().length > 0) {
+              Text($$.marker.getSnippet())
+                .fontSize(10)
+                .fontColor(Colors.TEXT_MUTED)
+                .fontFamily(Fonts.CN)
+                .margin({ top: 2 })
+            }
+          }
+          .layoutWeight(1)
+        }
+      }
+      .padding({ left: 8, right: 8, top: 6, bottom: 6 })
+      .backgroundColor(Colors.CARD_BG)
+      .borderRadius(Radius.CARD_SM)
+      .shadow({ radius: 4, color: 'rgba(0,0,0,0.15)', offsetX: 0, offsetY: 2 })
+    }
   }
 
   @Builder

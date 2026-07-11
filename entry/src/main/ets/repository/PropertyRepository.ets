@@ -1,4 +1,6 @@
 import { preferences } from '@kit.ArkData';
+import { util } from '@kit.ArkTS';
+import { fileIo as fs } from '@kit.CoreFileKit';
 import { PropertyInfo, PropertyDTO, StatisticsOverview, MonthlyRentItem, LeaseTimelineItem, UserProfileDTO, UserProfile } from '../model/PropertyModel';
 import EntryFormAbility from '../widget/EntryFormAbility';
 
@@ -51,6 +53,34 @@ export class PropertyRepository {
     try {
       await this.prefs!.flush();
     } catch (_e) {
+    }
+  }
+
+  private uriToPath(uri: string): string {
+    if (uri.startsWith('file://')) {
+      const idx1: number = uri.indexOf('/data/');
+      const idx2: number = uri.indexOf('/storage/');
+      if (idx1 >= 0) {
+        return uri.substring(idx1);
+      }
+      if (idx2 >= 0) {
+        return uri.substring(idx2);
+      }
+    }
+    return uri;
+  }
+
+  private deleteImageFiles(property: PropertyInfo): void {
+    for (const uri of property.imageUrls) {
+      try {
+        const filePath: string = this.uriToPath(uri);
+        if (filePath.startsWith('/data/') || filePath.startsWith('/storage/')) {
+          if (fs.accessSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+        }
+      } catch (_e) {
+      }
     }
   }
 
@@ -292,6 +322,21 @@ export class PropertyRepository {
   async updateProperty(property: PropertyInfo): Promise<void> {
     const index: number = this.properties.findIndex((item: PropertyInfo) => item.id === property.id);
     if (index >= 0) {
+      const old: PropertyInfo = this.properties[index];
+      const newUrls: Set<string> = new Set(property.imageUrls);
+      for (const uri of old.imageUrls) {
+        if (!newUrls.has(uri)) {
+          try {
+            const filePath: string = this.uriToPath(uri);
+            if (filePath.startsWith('/data/') || filePath.startsWith('/storage/')) {
+              if (fs.accessSync(filePath)) {
+                fs.unlinkSync(filePath);
+              }
+            }
+          } catch (_e) {
+          }
+        }
+      }
       const newList: PropertyInfo[] = [...this.properties];
       newList[index] = property;
       this.properties = newList;
@@ -301,6 +346,10 @@ export class PropertyRepository {
   }
 
   async deleteProperty(id: string): Promise<void> {
+    const target: PropertyInfo | undefined = this.properties.find((item: PropertyInfo) => item.id === id);
+    if (target) {
+      this.deleteImageFiles(target);
+    }
     this.properties = this.properties.filter((item: PropertyInfo) => item.id !== id);
     await this.saveToPrefs();
     this.notifyWidgetUpdate();
@@ -360,12 +409,21 @@ export class PropertyRepository {
   }
 
   async batchDelete(ids: string[]): Promise<void> {
+    for (const id of ids) {
+      const target: PropertyInfo | undefined = this.properties.find((item: PropertyInfo) => item.id === id);
+      if (target) {
+        this.deleteImageFiles(target);
+      }
+    }
     this.properties = this.properties.filter((item: PropertyInfo) => !ids.includes(item.id));
     await this.saveToPrefs();
     this.notifyWidgetUpdate();
   }
 
   async clearAll(): Promise<void> {
+    for (const p of this.properties) {
+      this.deleteImageFiles(p);
+    }
     this.properties = [];
     this.safePutSync(KEY_NEXT_ID, 1);
     this.safePutSync(KEY_USER_PROFILE, '');
@@ -623,5 +681,22 @@ export class PropertyRepository {
   async saveVibrateEnabled(enabled: boolean): Promise<void> {
     this.safePutSync(KEY_VIBRATE_ENABLED, enabled);
     await this.safeFlush();
+  }
+
+  getDataSizeMB(): string {
+    if (!this.prefs) {
+      return '0.00 MB';
+    }
+    try {
+      const propsJson: string = this.safeGetSync(KEY_PROPERTIES, '[]') as string;
+      const profileJson: string = this.safeGetSync(KEY_USER_PROFILE, '') as string;
+      const allData: string = propsJson + profileJson;
+      const encoder: util.TextEncoder = new util.TextEncoder();
+      const bytes: number = encoder.encodeInto(allData).byteLength;
+      const mb: number = bytes / (1024 * 1024);
+      return mb < 0.01 ? '0.01 MB' : `${mb.toFixed(2)} MB`;
+    } catch (_e) {
+      return '0.00 MB';
+    }
   }
 }
