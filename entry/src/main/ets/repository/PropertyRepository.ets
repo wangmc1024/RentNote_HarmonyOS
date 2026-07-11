@@ -97,7 +97,6 @@ export class PropertyRepository {
       this.safePutSync(KEY_NEXT_ID, 1);
       this.safePutSync(KEY_VERSION, DATA_VERSION);
       await this.safeFlush();
-      await this.insertMockData();
     } else if (storedVersion < DATA_VERSION) {
       this.loadFromPrefs();
       this.safePutSync(KEY_VERSION, DATA_VERSION);
@@ -180,108 +179,6 @@ export class PropertyRepository {
     if (this.initContext) {
       EntryFormAbility.notifyUpdate(this.initContext);
     }
-  }
-
-  private async insertMockData(): Promise<void> {
-    const mockList: PropertyInfo[] = [];
-    const p1: PropertyInfo = new PropertyInfo();
-    p1.id = '1';
-    p1.name = '碧水湾公寓';
-    p1.address = '朝阳区望京西园 2栋301';
-    p1.district = '朝阳区';
-    p1.tags = ['近地铁', '精装修', '押一付三', '民水民电', '有电梯'];
-    p1.monthlyRent = 6200;
-    p1.deposit = 6200;
-    p1.startDate = '2025.06.01';
-    p1.endDate = '2026.05.31';
-    p1.status = 'candidate';
-    p1.billsPaid = 0;
-    p1.imageUrls = [];
-    p1.notes = '';
-    p1.renewalStatus = '';
-    p1.latitude = 39.994;
-    p1.longitude = 116.474;
-    mockList.push(p1);
-
-    const p2: PropertyInfo = new PropertyInfo();
-    p2.id = '2';
-    p2.name = '阳光花园小区';
-    p2.address = '朝阳区望京街道 3栋502';
-    p2.district = '朝阳区';
-    p2.tags = ['学区房', '南北通透', '整租', '包物业', '朝南'];
-    p2.monthlyRent = 4500;
-    p2.deposit = 9000;
-    p2.startDate = '2025.07.15';
-    p2.endDate = '2026.07.15';
-    p2.status = 'renting';
-    p2.billsPaid = 6;
-    p2.imageUrls = [];
-    p2.notes = '';
-    p2.renewalStatus = 'renew';
-    p2.latitude = 39.988;
-    p2.longitude = 116.471;
-    mockList.push(p2);
-
-    const p3: PropertyInfo = new PropertyInfo();
-    p3.id = '3';
-    p3.name = '翠竹苑';
-    p3.address = '海淀区中关村南大街 12号';
-    p3.district = '海淀区';
-    p3.tags = ['科技园区', '新小区', '整租', '精装修', '可短租', '有电梯'];
-    p3.monthlyRent = 7800;
-    p3.deposit = 7800;
-    p3.startDate = '2025.01.01';
-    p3.endDate = '2027.01.01';
-    p3.status = 'candidate';
-    p3.billsPaid = 12;
-    p3.imageUrls = [];
-    p3.notes = '';
-    p3.renewalStatus = '';
-    p3.latitude = 39.959;
-    p3.longitude = 116.316;
-    mockList.push(p3);
-
-    const p4: PropertyInfo = new PropertyInfo();
-    p4.id = '4';
-    p4.name = '望京SOHO公寓';
-    p4.address = '';
-    p4.district = '';
-    p4.tags = ['近地铁', '精装修', '整租', '民水民电'];
-    p4.monthlyRent = 0;
-    p4.deposit = 0;
-    p4.startDate = '';
-    p4.endDate = '';
-    p4.status = 'candidate';
-    p4.billsPaid = 0;
-    p4.imageUrls = [];
-    p4.notes = '';
-    p4.renewalStatus = '';
-    p4.latitude = 39.993;
-    p4.longitude = 116.477;
-    mockList.push(p4);
-
-    const p5: PropertyInfo = new PropertyInfo();
-    p5.id = '5';
-    p5.name = '回龙观新村';
-    p5.address = '';
-    p5.district = '';
-    p5.tags = ['整租', '南北通透', '新小区', '房东好说话'];
-    p5.monthlyRent = 0;
-    p5.deposit = 0;
-    p5.startDate = '';
-    p5.endDate = '';
-    p5.status = 'candidate';
-    p5.billsPaid = 0;
-    p5.imageUrls = [];
-    p5.notes = '';
-    p5.renewalStatus = '';
-    p5.latitude = 40.074;
-    p5.longitude = 116.344;
-    mockList.push(p5);
-
-    this.properties = mockList;
-    this.safePutSync(KEY_NEXT_ID, 6);
-    await this.saveToPrefs();
   }
 
   private getNextId(): string {
