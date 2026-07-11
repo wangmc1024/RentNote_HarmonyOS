@@ -589,17 +589,44 @@ export struct AddPropertyPage {
         .fontWeight(FontWeight.Medium)
         .alignSelf(ItemAlign.Start)
 
-      TextInput({ placeholder: placeholder, text: value })
-        .width('100%')
-        .height(48)
-        .backgroundColor(Colors.CARD_BG)
-        .borderRadius(Radius.CARD_SM)
-        .padding({ left: Spacing.CARD_PADDING_SM, right: Spacing.CARD_PADDING_SM })
-        .fontSize(FontSizes.BODY_LARGE)
-        .fontColor(Colors.TEXT_MUTED)
-        .fontFamily(Fonts.NUMBER)
-        .placeholderColor(Colors.TEXT_MUTED)
-        .onChange((v: string) => onChange(v))
+      Row() {
+        Text(value.length > 0 ? value : placeholder)
+          .fontSize(FontSizes.BODY_LARGE)
+          .fontColor(value.length > 0 ? Colors.TEXT_PRIMARY : Colors.TEXT_MUTED)
+          .fontFamily(Fonts.NUMBER)
+
+        Blank()
+
+        SymbolGlyph($r('sys.symbol.calendar'))
+          .fontSize(16)
+          .fontColor([Colors.TEXT_MUTED])
+      }
+      .width('100%')
+      .height(48)
+      .backgroundColor(Colors.CARD_BG)
+      .borderRadius(Radius.CARD_SM)
+      .padding({ left: Spacing.CARD_PADDING_SM, right: Spacing.CARD_PADDING_SM })
+      .alignItems(VerticalAlign.Center)
+      .onClick(() => {
+        let selectedDate: Date = new Date();
+        if (value.length > 0) {
+          const parts: string[] = value.split('.');
+          if (parts.length === 3) {
+            selectedDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+          }
+        }
+        this.getUIContext().showDatePickerDialog({
+          start: new Date('2020-01-01'),
+          end: new Date('2099-12-31'),
+          selected: selectedDate,
+          onDateAccept: (dateValue: Date) => {
+            const y: number = dateValue.getFullYear();
+            const m: string = (dateValue.getMonth() + 1).toString().padStart(2, '0');
+            const d: string = dateValue.getDate().toString().padStart(2, '0');
+            onChange(y.toString() + '.' + m + '.' + d);
+          }
+        });
+      })
     }
     .layoutWeight(1)
   }
