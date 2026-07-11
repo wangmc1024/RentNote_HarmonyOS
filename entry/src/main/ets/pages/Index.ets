@@ -3,7 +3,13 @@ import { HomeContent } from './HomeContent';
 import { CandidateContent } from './CandidateContent';
 import { MyContent } from './MyContent';
 import { PropertyRepository } from '../repository/PropertyRepository';
-import { uiObserver } from '@kit.ArkUI';
+import { PropertyIdParam } from '../model/PropertyModel';
+import { AppStorageV2 } from '@kit.ArkUI';
+
+@ObservedV2
+class WidgetNavigateState {
+  @Trace action: string = '';
+}
 
 @Entry
 @ComponentV2
@@ -11,6 +17,7 @@ struct Index {
   @Provider('navPathStack') navPathStack: NavPathStack = new NavPathStack();
   @Provider('refreshFlag') refreshFlag: number = 0;
   @Local currentTab: number = 1;
+  @Local widgetState: WidgetNavigateState = AppStorageV2.connect(WidgetNavigateState, 'widgetNav', () => new WidgetNavigateState())!;
 
   private repository: PropertyRepository = PropertyRepository.getInstance();
 
@@ -23,6 +30,16 @@ struct Index {
         }
       }
     });
+  }
+
+  @Monitor('widgetState.action')
+  onWidgetActionChange(): void {
+    if (this.widgetState.action === 'addProperty') {
+      this.widgetState.action = '';
+      const addParam: PropertyIdParam = new PropertyIdParam();
+      addParam.mode = 'candidate';
+      this.navPathStack.pushPathByName('AddProperty', addParam);
+    }
   }
 
   build() {

@@ -26,6 +26,13 @@ export struct PropertyDetailPage {
   @Consumer('navPathStack') navPathStack: NavPathStack = new NavPathStack();
   @Consumer('refreshFlag') refreshFlag: number = 0;
 
+  @Monitor('refreshFlag')
+  onRefreshFlagChange(): void {
+    if (this.propertyId.length > 0) {
+      this.viewModel.loadProperty(this.propertyId);
+    }
+  }
+
   private mapOptions?: mapCommon.MapOptions;
   private mapCallback?: AsyncCallback<map.MapComponentController>;
   private mapController?: map.MapComponentController;

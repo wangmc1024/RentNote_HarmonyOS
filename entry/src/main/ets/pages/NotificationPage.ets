@@ -1,6 +1,6 @@
 import { Colors, Fonts, FontSizes, Radius, Shadows, Spacing } from '../common/DesignTokens';
 import { HeaderBar } from '../components/HeaderBar';
-import { MenuItemRow } from '../components/MenuItemRow';
+import { PropertyRepository } from '../repository/PropertyRepository';
 
 @Builder
 export function NotificationBuilder() {
@@ -14,6 +14,20 @@ export struct NotificationPage {
   @Local vibrateEnabled: boolean = false;
   @Consumer('navPathStack') navPathStack: NavPathStack = new NavPathStack();
 
+  aboutToAppear(): void {
+    const repo: PropertyRepository = PropertyRepository.getInstance();
+    this.pushEnabled = repo.getPushEnabled();
+    this.soundEnabled = repo.getSoundEnabled();
+    this.vibrateEnabled = repo.getVibrateEnabled();
+  }
+
+  private async saveSettings(): Promise<void> {
+    const repo: PropertyRepository = PropertyRepository.getInstance();
+    await repo.savePushEnabled(this.pushEnabled);
+    await repo.saveSoundEnabled(this.soundEnabled);
+    await repo.saveVibrateEnabled(this.vibrateEnabled);
+  }
+
   build() {
     NavDestination() {
       Column() {
@@ -21,6 +35,7 @@ export struct NotificationPage {
           title: '通知设置',
           showBack: true,
           onBack: () => {
+            this.saveSettings();
             this.navPathStack.pop();
           }
         })
@@ -41,6 +56,7 @@ export struct NotificationPage {
                 Toggle({ type: ToggleType.Switch, isOn: this.pushEnabled })
                   .onChange((value: boolean) => {
                     this.pushEnabled = value;
+                    this.saveSettings();
                   })
                   .margin({ right: Spacing.CARD_PADDING })
               }
@@ -62,6 +78,7 @@ export struct NotificationPage {
                 Toggle({ type: ToggleType.Switch, isOn: this.soundEnabled })
                   .onChange((value: boolean) => {
                     this.soundEnabled = value;
+                    this.saveSettings();
                   })
                   .margin({ right: Spacing.CARD_PADDING })
               }
@@ -83,6 +100,7 @@ export struct NotificationPage {
                 Toggle({ type: ToggleType.Switch, isOn: this.vibrateEnabled })
                   .onChange((value: boolean) => {
                     this.vibrateEnabled = value;
+                    this.saveSettings();
                   })
                   .margin({ right: Spacing.CARD_PADDING })
               }

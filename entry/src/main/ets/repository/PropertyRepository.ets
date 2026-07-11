@@ -7,6 +7,11 @@ const KEY_PROPERTIES: string = 'properties';
 const KEY_NEXT_ID: string = 'next_id';
 const KEY_VERSION: string = 'data_version';
 const KEY_USER_PROFILE: string = 'user_profile';
+const KEY_REMINDER_ENABLED: string = 'reminder_enabled';
+const KEY_REMINDER_DAYS: string = 'reminder_days';
+const KEY_PUSH_ENABLED: string = 'push_enabled';
+const KEY_SOUND_ENABLED: string = 'sound_enabled';
+const KEY_VIBRATE_ENABLED: string = 'vibrate_enabled';
 const DATA_VERSION: number = 4;
 
 @ObservedV2
@@ -518,6 +523,7 @@ export class PropertyRepository {
           }
         }
         await this.saveToPrefs();
+        this.notifyWidgetUpdate();
       }
     } catch (_e) {
       return 0;
@@ -531,5 +537,65 @@ export class PropertyRepository {
       dtoList.push(p.toDTO());
     }
     return JSON.stringify(dtoList, null, 2);
+  }
+
+  getReminderEnabled(): boolean {
+    if (!this.prefs) {
+      return true;
+    }
+    return this.prefs.getSync(KEY_REMINDER_ENABLED, true) as boolean;
+  }
+
+  async saveReminderEnabled(enabled: boolean): Promise<void> {
+    this.prefs!.putSync(KEY_REMINDER_ENABLED, enabled);
+    await this.prefs!.flush();
+  }
+
+  getReminderDays(): number {
+    if (!this.prefs) {
+      return 30;
+    }
+    return this.prefs.getSync(KEY_REMINDER_DAYS, 30) as number;
+  }
+
+  async saveReminderDays(days: number): Promise<void> {
+    this.prefs!.putSync(KEY_REMINDER_DAYS, days);
+    await this.prefs!.flush();
+  }
+
+  getPushEnabled(): boolean {
+    if (!this.prefs) {
+      return true;
+    }
+    return this.prefs.getSync(KEY_PUSH_ENABLED, true) as boolean;
+  }
+
+  async savePushEnabled(enabled: boolean): Promise<void> {
+    this.prefs!.putSync(KEY_PUSH_ENABLED, enabled);
+    await this.prefs!.flush();
+  }
+
+  getSoundEnabled(): boolean {
+    if (!this.prefs) {
+      return true;
+    }
+    return this.prefs.getSync(KEY_SOUND_ENABLED, true) as boolean;
+  }
+
+  async saveSoundEnabled(enabled: boolean): Promise<void> {
+    this.prefs!.putSync(KEY_SOUND_ENABLED, enabled);
+    await this.prefs!.flush();
+  }
+
+  getVibrateEnabled(): boolean {
+    if (!this.prefs) {
+      return false;
+    }
+    return this.prefs.getSync(KEY_VIBRATE_ENABLED, false) as boolean;
+  }
+
+  async saveVibrateEnabled(enabled: boolean): Promise<void> {
+    this.prefs!.putSync(KEY_VIBRATE_ENABLED, enabled);
+    await this.prefs!.flush();
   }
 }

@@ -1,6 +1,6 @@
 import { Colors, Fonts, FontSizes, Radius, Shadows, Spacing } from '../common/DesignTokens';
 import { HeaderBar } from '../components/HeaderBar';
-import { MenuItemRow } from '../components/MenuItemRow';
+import { PropertyRepository } from '../repository/PropertyRepository';
 
 @Builder
 export function ReminderBuilder() {
@@ -13,6 +13,18 @@ export struct ReminderPage {
   @Local reminderEnabled: boolean = true;
   @Consumer('navPathStack') navPathStack: NavPathStack = new NavPathStack();
 
+  aboutToAppear(): void {
+    const repo: PropertyRepository = PropertyRepository.getInstance();
+    this.reminderEnabled = repo.getReminderEnabled();
+    this.reminderDays = repo.getReminderDays();
+  }
+
+  private async saveSettings(): Promise<void> {
+    const repo: PropertyRepository = PropertyRepository.getInstance();
+    await repo.saveReminderEnabled(this.reminderEnabled);
+    await repo.saveReminderDays(this.reminderDays);
+  }
+
   build() {
     NavDestination() {
       Column() {
@@ -20,6 +32,7 @@ export struct ReminderPage {
           title: '租约到期提醒',
           showBack: true,
           onBack: () => {
+            this.saveSettings();
             this.navPathStack.pop();
           }
         })
@@ -40,6 +53,7 @@ export struct ReminderPage {
                 Toggle({ type: ToggleType.Switch, isOn: this.reminderEnabled })
                   .onChange((value: boolean) => {
                     this.reminderEnabled = value;
+                    this.saveSettings();
                   })
                   .margin({ right: Spacing.CARD_PADDING })
               }
@@ -88,6 +102,7 @@ export struct ReminderPage {
                   .justifyContent(FlexAlign.Center)
                   .onClick(() => {
                     this.reminderDays = days;
+                    this.saveSettings();
                   })
                 }, (item: number) => item.toString())
               }
