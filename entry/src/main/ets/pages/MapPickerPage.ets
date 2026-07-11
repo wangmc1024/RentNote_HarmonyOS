@@ -76,8 +76,10 @@ export struct MapPickerPage {
       title: '选中位置'
     };
     try {
-      const marker: map.Marker = await this.mapController!.addMarker(markerOptions);
-      this.pickerMarker = marker;
+      if (this.mapController) {
+        const marker: map.Marker = await this.mapController.addMarker(markerOptions);
+        this.pickerMarker = marker;
+      }
     } catch (_e) {
     }
 

@@ -53,42 +53,9 @@ export struct PropertyDetailPage {
     this.mapCallback = async (err: BusinessError | null, mapController: map.MapComponentController) => {
       if (!err) {
         this.mapController = mapController;
-        this.addPropertyMarker();
+        this.refreshMapMarker();
       }
     };
-  }
-
-  private async addPropertyMarker(): Promise<void> {
-    if (!this.mapController || !this.viewModel.property) {
-      return;
-    }
-    const p: PropertyInfo = this.viewModel.property as PropertyInfo;
-    if (p.latitude !== 0 && p.longitude !== 0) {
-      const markerOptions: mapCommon.MarkerOptions = {
-        position: {
-          latitude: p.latitude,
-          longitude: p.longitude
-        },
-        clickable: false,
-        anchorU: 0.5,
-        anchorV: 1,
-        title: p.name
-      };
-      try {
-        const marker: map.Marker = await this.mapController.addMarker(markerOptions);
-        this.detailMarker = marker;
-      } catch (_e) {
-      }
-      const cameraPosition: mapCommon.CameraPosition = {
-        target: {
-          latitude: p.latitude,
-          longitude: p.longitude
-        },
-        zoom: 14
-      };
-      const cameraUpdate: map.CameraUpdate = map.newCameraPosition(cameraPosition);
-      this.mapController.moveCamera(cameraUpdate);
-    }
   }
 
   private async refreshMapMarker(): Promise<void> {
@@ -157,10 +124,9 @@ export struct PropertyDetailPage {
       .height('100%')
     }
     .onReady((context: NavDestinationContext) => {
-      const param: Object = context.pathInfo.param as Object;
-      const paramObj: PropertyIdParam = param as PropertyIdParam;
-      if (paramObj.propertyId) {
-        this.propertyId = paramObj.propertyId;
+      const param: PropertyIdParam | undefined = context.pathInfo.param as PropertyIdParam | undefined;
+      if (param && param.propertyId) {
+        this.propertyId = param.propertyId;
         this.viewModel.loadProperty(this.propertyId).then(() => {
           if (this.viewModel.property) {
             const p: PropertyInfo = this.viewModel.property as PropertyInfo;

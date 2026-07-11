@@ -20,10 +20,6 @@ export class AddPropertyViewModel {
     this.editPropertyId = '';
   }
 
-  setCandidateMode(): void {
-    this.isCandidateMode = true;
-  }
-
   loadProperty(): PropertyInfo | undefined {
     if (this.editPropertyId) {
       return this.repository.getPropertyById(this.editPropertyId);

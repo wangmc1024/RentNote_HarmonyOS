@@ -96,32 +96,9 @@ export class StatisticsOverview {
   @Trace rentingCount: number = 0;
 }
 
-/** 月度租金数据点 */
-export class MonthlyRentItem {
-  month: string = '';
-  amount: number = 0;
-}
-
-/** 租期时间线条目 */
-export class LeaseTimelineItem {
-  propertyId: string = '';
-  name: string = '';
-  monthlyRent: number = 0;
-  startYear: number = 0;
-  startMonth: number = 0;
-  endYear: number = 0;
-  endMonth: number = 0;
-  isExpiring: boolean = false;
-}
-
 export class PropertyIdParam {
   propertyId: string = '';
   mode: string = '';
-}
-
-/** 路由返回结果：保存成功 */
-export class SaveResult {
-  saved: boolean = false;
 }
 
 /** 路由返回结果：删除成功 */
@@ -148,4 +125,9 @@ export class UserProfile {
   @Trace name: string = '';
   @Trace subtitle: string = '';
   @Trace avatarUri: string = '';
+}
+
+@ObservedV2
+export class WidgetNavigateState {
+  @Trace action: string = '';
 }

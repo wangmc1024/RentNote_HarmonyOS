@@ -1,11 +1,7 @@
 import { UIAbility, Want, AbilityConstant } from '@kit.AbilityKit';
 import { window, AppStorageV2 } from '@kit.ArkUI';
 import { PropertyRepository } from '../repository/PropertyRepository';
-
-@ObservedV2
-class WidgetNavigateState {
-  @Trace action: string = '';
-}
+import { WidgetNavigateState } from '../model/PropertyModel';
 
 export default class EntryAbility extends UIAbility {
   async onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): Promise<void> {
@@ -29,8 +25,10 @@ export default class EntryAbility extends UIAbility {
     if (params) {
       const action: string = (params['action'] as string) ?? '';
       if (action === 'addProperty') {
-        const state: WidgetNavigateState = AppStorageV2.connect(WidgetNavigateState, 'widgetNav', () => new WidgetNavigateState())!;
-        state.action = 'addProperty';
+        const state: WidgetNavigateState | undefined = AppStorageV2.connect(WidgetNavigateState, 'widgetNav', () => new WidgetNavigateState());
+        if (state) {
+          state.action = 'addProperty';
+        }
       }
     }
   }

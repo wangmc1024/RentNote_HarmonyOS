@@ -5,11 +5,11 @@
  * 保存后调用 navPathStack.pop({ result: { saved: true } })
  * 统一使用 HeaderBar 组件
  */
-import { Colors, Fonts, FontSizes, Dimensions, Radius, Shadows, Spacing } from '../common/DesignTokens';
+import { Colors, Fonts, FontSizes, Radius, Spacing } from '../common/DesignTokens';
 
 import { HeaderBar } from '../components/HeaderBar';
 import { TagCategory } from '../model/TagModel';
-import { PropertyInfo, PropertyIdParam, SaveResult, DeleteResult, MapPickerResult } from '../model/PropertyModel';
+import { PropertyInfo, PropertyIdParam, DeleteResult, MapPickerResult } from '../model/PropertyModel';
 import { AddPropertyViewModel } from '../viewmodel/AddPropertyViewModel';
 import { photoAccessHelper } from '@kit.MediaLibraryKit';
 import { fileIo as fs, fileUri } from '@kit.CoreFileKit';
@@ -194,7 +194,7 @@ export struct AddPropertyPage {
           message: '保存成功',
           duration: 2000
         });
-        this.navPathStack.clear();
+        this.navPathStack.pop();
       } else {
         this.validationError = this.viewModel.validationError;
       }

@@ -1,7 +1,7 @@
 import { preferences } from '@kit.ArkData';
 import { util } from '@kit.ArkTS';
 import { fileIo as fs } from '@kit.CoreFileKit';
-import { PropertyInfo, PropertyDTO, StatisticsOverview, MonthlyRentItem, LeaseTimelineItem, UserProfileDTO, UserProfile } from '../model/PropertyModel';
+import { PropertyInfo, PropertyDTO, StatisticsOverview, UserProfileDTO, UserProfile } from '../model/PropertyModel';
 import EntryFormAbility from '../widget/EntryFormAbility';
 
 const PREFS_NAME: string = 'RentNotePrefs';
@@ -192,8 +192,8 @@ export class PropertyRepository {
     p1.tags = ['近地铁', '精装修', '押一付三', '民水民电', '有电梯'];
     p1.monthlyRent = 6200;
     p1.deposit = 6200;
-    p1.startDate = '2024.03.01';
-    p1.endDate = '2024.12.31';
+    p1.startDate = '2025.06.01';
+    p1.endDate = '2026.05.31';
     p1.status = 'candidate';
     p1.billsPaid = 0;
     p1.imageUrls = [];
@@ -211,8 +211,8 @@ export class PropertyRepository {
     p2.tags = ['学区房', '南北通透', '整租', '包物业', '朝南'];
     p2.monthlyRent = 4500;
     p2.deposit = 9000;
-    p2.startDate = '2024.03.15';
-    p2.endDate = '2025.03.15';
+    p2.startDate = '2025.07.15';
+    p2.endDate = '2026.07.15';
     p2.status = 'renting';
     p2.billsPaid = 6;
     p2.imageUrls = [];
@@ -230,8 +230,8 @@ export class PropertyRepository {
     p3.tags = ['科技园区', '新小区', '整租', '精装修', '可短租', '有电梯'];
     p3.monthlyRent = 7800;
     p3.deposit = 7800;
-    p3.startDate = '2024.01.01';
-    p3.endDate = '2026.01.01';
+    p3.startDate = '2025.01.01';
+    p3.endDate = '2027.01.01';
     p3.status = 'candidate';
     p3.billsPaid = 12;
     p3.imageUrls = [];
@@ -445,24 +445,6 @@ export class PropertyRepository {
     return overview;
   }
 
-  getMonthlyRentItems(): MonthlyRentItem[] {
-    const months: string[] = ['2月', '3月', '4月', '5月', '6月', '7月'];
-    const renting: PropertyInfo[] = this.properties.filter(
-      (item: PropertyInfo) => item.status === 'renting' || item.status === 'expiring'
-    );
-    const totalRent: number = renting.reduce((sum: number, item: PropertyInfo) => sum + item.monthlyRent, 0);
-
-    const items: MonthlyRentItem[] = [];
-    for (let i: number = 0; i < months.length; i++) {
-      const variation: number = Math.round(totalRent * (0.7 + i * 0.06));
-      const item: MonthlyRentItem = new MonthlyRentItem();
-      item.month = months[i];
-      item.amount = variation;
-      items.push(item);
-    }
-    return items;
-  }
-
   getExpiringProperties(days: number): PropertyInfo[] {
     const now: Date = new Date();
     now.setHours(0, 0, 0, 0);
@@ -482,30 +464,6 @@ export class PropertyRepository {
       const remainingDays: number = Math.ceil(diff / (1000 * 60 * 60 * 24));
       return remainingDays >= 0 && remainingDays <= days;
     });
-  }
-
-  getLeaseTimelineItems(): LeaseTimelineItem[] {
-    const items: LeaseTimelineItem[] = [];
-    const renting: PropertyInfo[] = this.properties.filter(
-      (item: PropertyInfo) => item.status === 'renting' || item.status === 'expiring'
-    );
-    for (const property of renting) {
-      const startParts: string[] = property.startDate.split('.');
-      const endParts: string[] = property.endDate.split('.');
-      if (startParts.length >= 2 && endParts.length >= 2) {
-        const item: LeaseTimelineItem = new LeaseTimelineItem();
-        item.propertyId = property.id;
-        item.name = property.name;
-        item.monthlyRent = property.monthlyRent;
-        item.startYear = parseInt(startParts[0], 10) || 2024;
-        item.startMonth = parseInt(startParts[1], 10) || 1;
-        item.endYear = parseInt(endParts[0], 10) || 2025;
-        item.endMonth = parseInt(endParts[1], 10) || 1;
-        item.isExpiring = property.status === 'expiring';
-        items.push(item);
-      }
-    }
-    return items;
   }
 
   getUserProfile(): UserProfile {

@@ -1,4 +1,4 @@
-import { Colors, Fonts, FontSizes, Dimensions, Radius, Shadows, Spacing } from '../common/DesignTokens';
+import { Colors, Fonts, FontSizes, Dimensions, Radius, Spacing } from '../common/DesignTokens';
 import { HeaderBar } from '../components/HeaderBar';
 import { UserProfile } from '../model/PropertyModel';
 import { PropertyRepository } from '../repository/PropertyRepository';

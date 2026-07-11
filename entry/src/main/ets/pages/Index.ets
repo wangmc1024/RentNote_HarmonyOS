@@ -1,15 +1,10 @@
-import { Colors, Fonts, FontSizes, Dimensions, Radius, Spacing } from '../common/DesignTokens';
+import { Colors, Fonts, FontSizes, Dimensions, Radius } from '../common/DesignTokens';
 import { HomeContent } from './HomeContent';
 import { CandidateContent } from './CandidateContent';
 import { MyContent } from './MyContent';
 import { PropertyRepository } from '../repository/PropertyRepository';
-import { PropertyIdParam } from '../model/PropertyModel';
+import { PropertyIdParam, WidgetNavigateState } from '../model/PropertyModel';
 import { AppStorageV2 } from '@kit.ArkUI';
-
-@ObservedV2
-class WidgetNavigateState {
-  @Trace action: string = '';
-}
 
 @Entry
 @ComponentV2

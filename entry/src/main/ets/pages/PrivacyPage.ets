@@ -79,7 +79,7 @@ export struct PrivacyPage {
                 .alignSelf(ItemAlign.Start)
                 .margin({ top: 16 })
 
-              Text('所有数据采用本地加密存储，不会通过网络传输。您可随时通过数据导出功能备份或通过清除数据功能删除所有信息。')
+              Text('所有数据采用本地沙箱存储，仅应用自身可访问，不会通过网络传输。您可随时通过数据导出功能备份或通过清除数据功能删除所有信息。')
                 .fontSize(FontSizes.BODY_SMALL)
                 .fontColor(Colors.TEXT_SECONDARY)
                 .fontFamily(Fonts.CN)

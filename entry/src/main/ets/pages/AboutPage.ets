@@ -5,7 +5,7 @@
  * Emoji 替换为 SymbolGlyph
  * 通过 @Consumer 获取 navPathStack 用于返回操作
  */
-import { Colors, Fonts, FontSizes, Dimensions, Radius, Spacing } from '../common/DesignTokens';
+import { Colors, Fonts, FontSizes, Dimensions, Radius } from '../common/DesignTokens';
 import { HeaderBar } from '../components/HeaderBar';
 
 @Builder
