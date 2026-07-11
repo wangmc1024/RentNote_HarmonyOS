@@ -17,7 +17,9 @@
       "scheduledUpdateTime": "10:00",
       "updateDuration": 1,
       "defaultDimension": "2*4",
-      "supportDimensions": ["2*4"]
+      "supportDimensions": [
+        "2*4"
+      ]
     }
   ]
 }

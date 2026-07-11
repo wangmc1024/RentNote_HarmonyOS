@@ -63,6 +63,22 @@
     {
       "name": "location_reason",
       "value": "用于在地图上显示房源位置和选择房源地址"
+    },
+    {
+      "name": "widget1_desc",
+      "value": "This is a service widget."
+    },
+    {
+      "name": "widget1_display_name",
+      "value": "widget1"
+    },
+    {
+      "name": "card_title",
+      "value": "Title"
+    },
+    {
+      "name": "introduction",
+      "value": "Introduction"
     }
   ]
 }
