@@ -25,20 +25,12 @@
       "value": "房源详情"
     },
     {
-      "name": "route_Settings",
-      "value": "设置"
-    },
-    {
       "name": "route_About",
       "value": "关于"
     },
     {
       "name": "tab_home",
       "value": "首页"
-    },
-    {
-      "name": "tab_statistics",
-      "value": "统计"
     },
     {
       "name": "tab_my",
@@ -61,16 +53,8 @@
       "value": "通知设置"
     },
     {
-      "name": "route_DataManage",
-      "value": "数据管理"
-    },
-    {
       "name": "route_DataImport",
       "value": "数据导入"
-    },
-    {
-      "name": "route_DataRestore",
-      "value": "数据恢复"
     },
     {
       "name": "route_DataExport",

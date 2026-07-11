@@ -167,14 +167,6 @@ export struct MyContent {
           })
           Divider().color(Colors.DIVIDER_LIGHT).strokeWidth(0.5).margin({ left: 20, right: 20 })
           MenuItemRow({
-            iconName: 'sys.symbol.arrow_clockwise',
-            label: '数据恢复',
-            onAction: () => {
-              this.navPathStack.pushPathByName('DataRestore', null);
-            }
-          })
-          Divider().color(Colors.DIVIDER_LIGHT).strokeWidth(0.5).margin({ left: 20, right: 20 })
-          MenuItemRow({
             iconName: 'sys.symbol.share',
             label: '导出数据',
             onAction: () => {

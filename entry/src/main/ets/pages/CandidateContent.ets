@@ -21,11 +21,12 @@ export struct CandidateContent {
   private mapCallback?: AsyncCallback<map.MapComponentController>;
   private mapController?: map.MapComponentController;
   private addedMarkers: map.Marker[] = [];
-  private markerPropertyMap: Map<string, string> = new Map();
+  private markerPropertyIds: string[] = [];
 
   @Monitor('refreshFlag')
   onRefreshFlagChange(): void {
     this.viewModel.loadData();
+    this.updateMarkers();
   }
 
   aboutToAppear(): void {
@@ -43,6 +44,20 @@ export struct CandidateContent {
       if (!err) {
         this.mapController = mapController;
         this.updateMarkers();
+        mapController.on('markerClick', (marker: map.Marker) => {
+          const markerIndex: number = this.addedMarkers.indexOf(marker);
+          if (markerIndex >= 0 && markerIndex < this.markerPropertyIds.length) {
+            const propId: string = this.markerPropertyIds[markerIndex];
+            const prop: PropertyInfo | null = this.getPropertyById(propId);
+            if (prop) {
+              this.selectedMarkerPropertyId = prop.id;
+              this.selectedMarkerPropertyName = prop.name;
+              this.selectedMarkerDistrict = prop.district;
+              this.selectedMarkerImage = prop.getFirstImage();
+            }
+          }
+          return false;
+        });
       }
     };
   }
@@ -55,7 +70,7 @@ export struct CandidateContent {
       marker.remove();
     }
     this.addedMarkers = [];
-    this.markerPropertyMap = new Map();
+    this.markerPropertyIds = [];
 
     const properties: PropertyInfo[] = this.viewModel.candidateProperties;
     for (const p of properties) {
@@ -73,23 +88,9 @@ export struct CandidateContent {
         };
         const marker: map.Marker = await this.mapController.addMarker(markerOptions);
         this.addedMarkers.push(marker);
-        this.markerPropertyMap.set(p.name, p.id);
+        this.markerPropertyIds.push(p.id);
       }
     }
-    this.mapController.on('markerClick', (marker: map.Marker) => {
-      const markerTitle: string = marker.getTitle();
-      const propId: string | undefined = this.markerPropertyMap.get(markerTitle);
-      if (propId) {
-        const prop: PropertyInfo | null = this.getPropertyById(propId);
-        if (prop) {
-          this.selectedMarkerPropertyId = prop.id;
-          this.selectedMarkerPropertyName = prop.name;
-          this.selectedMarkerDistrict = prop.district;
-          this.selectedMarkerImage = prop.getFirstImage();
-        }
-      }
-      return false;
-    });
   }
 
   private enterEditMode(id: string): void {

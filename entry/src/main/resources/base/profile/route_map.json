@@ -17,14 +17,6 @@
       }
     },
     {
-      "name": "Settings",
-      "pageSourceFile": "src/main/ets/pages/SettingsPage.ets",
-      "buildFunction": "SettingsBuilder",
-      "data": {
-        "description": "设置页面"
-      }
-    },
-    {
       "name": "About",
       "pageSourceFile": "src/main/ets/pages/AboutPage.ets",
       "buildFunction": "AboutBuilder",
@@ -49,27 +41,11 @@
       }
     },
     {
-      "name": "DataManage",
-      "pageSourceFile": "src/main/ets/pages/DataManagePage.ets",
-      "buildFunction": "DataManageBuilder",
-      "data": {
-        "description": "数据管理"
-      }
-    },
-    {
       "name": "DataImport",
       "pageSourceFile": "src/main/ets/pages/DataImportPage.ets",
       "buildFunction": "DataImportBuilder",
       "data": {
         "description": "数据导入"
-      }
-    },
-    {
-      "name": "DataRestore",
-      "pageSourceFile": "src/main/ets/pages/DataRestorePage.ets",
-      "buildFunction": "DataRestoreBuilder",
-      "data": {
-        "description": "数据恢复"
       }
     },
     {

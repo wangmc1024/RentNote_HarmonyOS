@@ -29,6 +29,7 @@ export struct AddPropertyPage {
   @Local endDate: string = '';
   @Local notes: string = '';
   @Local renewalStatus: string = '';
+  @Local district: string = '';
   @Local latitude: number = 0;
   @Local longitude: number = 0;
   @Local imageUris: string[] = [];
@@ -65,7 +66,21 @@ export struct AddPropertyPage {
       this.renewalStatus = property.renewalStatus;
       this.latitude = property.latitude;
       this.longitude = property.longitude;
+      this.district = property.district;
       this.imageUris = [...property.imageUrls];
+      const tagSet: Set<string> = new Set(property.tags);
+      const updatedCategories: TagCategory[] = [];
+      for (const category of this.tagCategories) {
+        const selectedIndices: number[] = [];
+        for (let i: number = 0; i < category.tags.length; i++) {
+          if (tagSet.has(category.tags[i])) {
+            selectedIndices.push(i);
+          }
+        }
+        const updated: TagCategory = new TagCategory(category.name, category.tagBg, category.tagText, category.tags, selectedIndices);
+        updatedCategories.push(updated);
+      }
+      this.tagCategories = updatedCategories;
     }
   }
 
@@ -104,12 +119,21 @@ export struct AddPropertyPage {
     this.imageUris = newList;
   }
 
+  private extractDistrict(address: string): string {
+    const pattern: RegExp = new RegExp('[\\u4e00-\\u9fa5]{2,3}[区县]');
+    const match: RegExpMatchArray | null = address.match(pattern);
+    if (match && match.length > 0) {
+      return match[0];
+    }
+    return address.length > 3 ? address.substring(0, 3) : address;
+  }
+
   /** 保存房源 */
   private saveProperty(): void {
     const property: PropertyInfo = new PropertyInfo();
     property.name = this.communityName;
     property.address = this.address;
-    property.district = this.address.length > 0 ? this.address.substring(0, 3) : '';
+    property.district = this.district;
     property.tags = this.getSelectedTags();
     property.monthlyRent = parseFloat(this.monthlyRent) || 0;
     property.deposit = parseFloat(this.deposit) || 0;
@@ -129,9 +153,6 @@ export struct AddPropertyPage {
           message: '保存成功',
           duration: 2000
         });
-        const saveResult: SaveResult = new SaveResult();
-        saveResult.saved = true;
-        this.refreshFlag++;
         this.navPathStack.clear();
       } else {
         this.validationError = this.viewModel.validationError;
@@ -217,6 +238,7 @@ export struct AddPropertyPage {
                       this.longitude = mapResult.longitude;
                       if (mapResult.address && mapResult.address.length > 0) {
                         this.address = mapResult.address;
+                        this.district = this.extractDistrict(mapResult.address);
                       }
                       if (mapResult.siteName && mapResult.siteName.length > 0 && this.communityName.length === 0) {
                         this.communityName = mapResult.siteName;

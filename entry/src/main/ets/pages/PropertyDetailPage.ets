@@ -29,13 +29,16 @@ export struct PropertyDetailPage {
   @Monitor('refreshFlag')
   onRefreshFlagChange(): void {
     if (this.propertyId.length > 0) {
-      this.viewModel.loadProperty(this.propertyId);
+      this.viewModel.loadProperty(this.propertyId).then(() => {
+        this.refreshMapMarker();
+      });
     }
   }
 
   private mapOptions?: mapCommon.MapOptions;
   private mapCallback?: AsyncCallback<map.MapComponentController>;
   private mapController?: map.MapComponentController;
+  private detailMarker?: map.Marker;
 
   aboutToAppear(): void {
     this.mapOptions = {
@@ -71,7 +74,53 @@ export struct PropertyDetailPage {
         anchorV: 1,
         title: p.name
       };
-      this.mapController.addMarker(markerOptions);
+      this.mapController.addMarker(markerOptions).then((marker: map.Marker) => {
+        this.detailMarker = marker;
+      });
+      const cameraPosition: mapCommon.CameraPosition = {
+        target: {
+          latitude: p.latitude,
+          longitude: p.longitude
+        },
+        zoom: 14
+      };
+      const cameraUpdate: map.CameraUpdate = map.newCameraPosition(cameraPosition);
+      this.mapController.moveCamera(cameraUpdate);
+    }
+  }
+
+  private refreshMapMarker(): void {
+    if (!this.mapController || !this.viewModel.property) {
+      return;
+    }
+    if (this.detailMarker) {
+      this.detailMarker.remove();
+      this.detailMarker = undefined;
+    }
+    const p: PropertyInfo = this.viewModel.property as PropertyInfo;
+    if (p.latitude !== 0 && p.longitude !== 0) {
+      const markerOptions: mapCommon.MarkerOptions = {
+        position: {
+          latitude: p.latitude,
+          longitude: p.longitude
+        },
+        clickable: false,
+        anchorU: 0.5,
+        anchorV: 1,
+        title: p.name
+      };
+      this.mapController.addMarker(markerOptions).then((marker: map.Marker) => {
+        this.detailMarker = marker;
+      });
+      const cameraPosition: mapCommon.CameraPosition = {
+        target: {
+          latitude: p.latitude,
+          longitude: p.longitude
+        },
+        zoom: 14
+      };
+      const cameraUpdate: map.CameraUpdate = map.newCameraPosition(cameraPosition);
+      this.mapController.moveCamera(cameraUpdate);
     }
   }
 
