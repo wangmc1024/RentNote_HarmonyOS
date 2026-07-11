@@ -3,7 +3,6 @@ import { HeaderBar } from '../components/HeaderBar';
 import { PropertyRepository } from '../repository/PropertyRepository';
 import { picker, fileIo } from '@kit.CoreFileKit';
 import { buffer } from '@kit.ArkTS';
-import { promptAction } from '@kit.ArkUI';
 
 @Builder
 export function DataExportBuilder() {
@@ -35,10 +34,13 @@ export struct DataExportPage {
       fileIo.writeSync(file.fd, bytes.buffer);
       fileIo.closeSync(file);
       this.exportStatus = '导出成功';
-      promptAction.showToast({ message: '导出成功', duration: 2000 });
+      this.getUIContext().getPromptAction().showToast({ message: '导出成功', duration: 2000 });
     } catch (_e) {
       this.exportStatus = '导出失败';
-      promptAction.showToast({ message: '导出失败', duration: 2000 });
+      try {
+        this.getUIContext().getPromptAction().showToast({ message: '导出失败', duration: 2000 });
+      } catch (_ee) {
+      }
     }
   }
 

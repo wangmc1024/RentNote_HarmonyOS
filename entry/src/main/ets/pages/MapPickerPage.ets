@@ -54,7 +54,7 @@ export struct MapPickerPage {
     };
   }
 
-  private onMapClick(position: mapCommon.LatLng): void {
+  private async onMapClick(position: mapCommon.LatLng): Promise<void> {
     this.selectedLat = position.latitude;
     this.selectedLng = position.longitude;
     this.hasSelection = true;
@@ -75,9 +75,11 @@ export struct MapPickerPage {
       anchorV: 1,
       title: '选中位置'
     };
-    this.mapController?.addMarker(markerOptions).then((marker: map.Marker) => {
+    try {
+      const marker: map.Marker = await this.mapController!.addMarker(markerOptions);
       this.pickerMarker = marker;
-    });
+    } catch (_e) {
+    }
 
     const params: site.ReverseGeocodeParams = {
       location: {

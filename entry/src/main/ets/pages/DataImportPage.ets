@@ -3,7 +3,6 @@ import { HeaderBar } from '../components/HeaderBar';
 import { PropertyRepository } from '../repository/PropertyRepository';
 import { picker, fileIo } from '@kit.CoreFileKit';
 import { util } from '@kit.ArkTS';
-import { promptAction } from '@kit.ArkUI';
 
 @Builder
 export function DataImportBuilder() {
@@ -43,14 +42,17 @@ export struct DataImportPage {
         this.importedCount = count;
         this.importStatus = `成功导入 ${count} 条房源`;
         this.refreshFlag++;
-        promptAction.showToast({ message: `成功导入 ${count} 条房源`, duration: 2000 });
+        this.getUIContext().getPromptAction().showToast({ message: `成功导入 ${count} 条房源`, duration: 2000 });
       } else {
         this.importStatus = '未导入任何数据，文件可能为空或所有房源已存在';
-        promptAction.showToast({ message: '没有可导入的新房源', duration: 2000 });
+        this.getUIContext().getPromptAction().showToast({ message: '没有可导入的新房源', duration: 2000 });
       }
     } catch (_e) {
       this.importStatus = '导入失败，请检查文件格式';
-      promptAction.showToast({ message: '导入失败', duration: 2000 });
+      try {
+        this.getUIContext().getPromptAction().showToast({ message: '导入失败', duration: 2000 });
+      } catch (_ee) {
+      }
     }
   }
 

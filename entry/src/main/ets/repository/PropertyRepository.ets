@@ -32,25 +32,51 @@ export class PropertyRepository {
   constructor() {
   }
 
+  private safeGetSync(key: string, defaultValue: Object): Object {
+    try {
+      return this.prefs!.getSync(key, defaultValue);
+    } catch (_e) {
+      return defaultValue;
+    }
+  }
+
+  private safePutSync(key: string, value: Object): void {
+    try {
+      this.prefs!.putSync(key, value);
+    } catch (_e) {
+    }
+  }
+
+  private async safeFlush(): Promise<void> {
+    try {
+      await this.prefs!.flush();
+    } catch (_e) {
+    }
+  }
+
   async init(context: Context): Promise<void> {
     this.initContext = context;
-    this.prefs = await preferences.getPreferences(context, PREFS_NAME);
-    const storedVersion: number = this.prefs.getSync(KEY_VERSION, 0) as number;
+    try {
+      this.prefs = await preferences.getPreferences(context, PREFS_NAME);
+    } catch (_e) {
+      return;
+    }
+    const storedVersion: number = this.safeGetSync(KEY_VERSION, 0) as number;
     if (storedVersion === 0) {
-      this.prefs.putSync(KEY_PROPERTIES, '[]');
-      this.prefs.putSync(KEY_NEXT_ID, 1);
-      this.prefs.putSync(KEY_VERSION, DATA_VERSION);
-      await this.prefs.flush();
+      this.safePutSync(KEY_PROPERTIES, '[]');
+      this.safePutSync(KEY_NEXT_ID, 1);
+      this.safePutSync(KEY_VERSION, DATA_VERSION);
+      await this.safeFlush();
       await this.insertMockData();
     } else if (storedVersion < DATA_VERSION) {
       this.loadFromPrefs();
-      this.prefs.putSync(KEY_VERSION, DATA_VERSION);
+      this.safePutSync(KEY_VERSION, DATA_VERSION);
       const dtoList: PropertyDTO[] = [];
       for (const p of this.properties) {
         dtoList.push(p.toDTO());
       }
-      this.prefs!.putSync(KEY_PROPERTIES, JSON.stringify(dtoList));
-      await this.prefs!.flush();
+      this.safePutSync(KEY_PROPERTIES, JSON.stringify(dtoList));
+      await this.safeFlush();
     }
     this.loadFromPrefs();
     this.isInitialized = true;
@@ -72,7 +98,7 @@ export class PropertyRepository {
     if (!this.prefs) {
       return;
     }
-    const json: string = this.prefs.getSync(KEY_PROPERTIES, '[]') as string;
+    const json: string = this.safeGetSync(KEY_PROPERTIES, '[]') as string;
     if (json.length === 0 || json === '[]') {
       this.properties = [];
       return;
@@ -116,8 +142,8 @@ export class PropertyRepository {
       dtoList.push(p.toDTO());
     }
     const json: string = JSON.stringify(dtoList);
-    this.prefs!.putSync(KEY_PROPERTIES, json);
-    await this.prefs!.flush();
+    this.safePutSync(KEY_PROPERTIES, json);
+    await this.safeFlush();
   }
 
   private notifyWidgetUpdate(): void {
@@ -224,20 +250,20 @@ export class PropertyRepository {
     mockList.push(p5);
 
     this.properties = mockList;
-    this.prefs!.putSync(KEY_NEXT_ID, 6);
+    this.safePutSync(KEY_NEXT_ID, 6);
     await this.saveToPrefs();
   }
 
   private getNextId(): string {
-    const nextId: number = (this.prefs!.getSync(KEY_NEXT_ID, 1) as number);
+    const nextId: number = (this.safeGetSync(KEY_NEXT_ID, 1) as number);
     return String(nextId);
   }
 
   private async consumeNextId(): Promise<string> {
     const id: string = this.getNextId();
-    const nextVal: number = (this.prefs!.getSync(KEY_NEXT_ID, 1) as number) + 1;
-    this.prefs!.putSync(KEY_NEXT_ID, nextVal);
-    await this.prefs!.flush();
+    const nextVal: number = (this.safeGetSync(KEY_NEXT_ID, 1) as number) + 1;
+    this.safePutSync(KEY_NEXT_ID, nextVal);
+    await this.safeFlush();
     return id;
   }
 
@@ -341,8 +367,8 @@ export class PropertyRepository {
 
   async clearAll(): Promise<void> {
     this.properties = [];
-    this.prefs!.putSync(KEY_NEXT_ID, 1);
-    this.prefs!.putSync(KEY_USER_PROFILE, '');
+    this.safePutSync(KEY_NEXT_ID, 1);
+    this.safePutSync(KEY_USER_PROFILE, '');
     await this.saveToPrefs();
     this.notifyWidgetUpdate();
   }
@@ -429,7 +455,7 @@ export class PropertyRepository {
     if (!this.prefs) {
       return profile;
     }
-    const json: string = this.prefs.getSync(KEY_USER_PROFILE, '') as string;
+    const json: string = this.safeGetSync(KEY_USER_PROFILE, '') as string;
     if (json.length === 0) {
       return profile;
     }
@@ -446,8 +472,8 @@ export class PropertyRepository {
     dto.subtitle = profile.subtitle;
     dto.avatarUri = profile.avatarUri;
     const json: string = JSON.stringify(dto);
-    this.prefs!.putSync(KEY_USER_PROFILE, json);
-    await this.prefs!.flush();
+    this.safePutSync(KEY_USER_PROFILE, json);
+    await this.safeFlush();
   }
 
   async importFromJson(jsonStr: string): Promise<number> {
@@ -543,59 +569,59 @@ export class PropertyRepository {
     if (!this.prefs) {
       return true;
     }
-    return this.prefs.getSync(KEY_REMINDER_ENABLED, true) as boolean;
+    return this.safeGetSync(KEY_REMINDER_ENABLED, true) as boolean;
   }
 
   async saveReminderEnabled(enabled: boolean): Promise<void> {
-    this.prefs!.putSync(KEY_REMINDER_ENABLED, enabled);
-    await this.prefs!.flush();
+    this.safePutSync(KEY_REMINDER_ENABLED, enabled);
+    await this.safeFlush();
   }
 
   getReminderDays(): number {
     if (!this.prefs) {
       return 30;
     }
-    return this.prefs.getSync(KEY_REMINDER_DAYS, 30) as number;
+    return this.safeGetSync(KEY_REMINDER_DAYS, 30) as number;
   }
 
   async saveReminderDays(days: number): Promise<void> {
-    this.prefs!.putSync(KEY_REMINDER_DAYS, days);
-    await this.prefs!.flush();
+    this.safePutSync(KEY_REMINDER_DAYS, days);
+    await this.safeFlush();
   }
 
   getPushEnabled(): boolean {
     if (!this.prefs) {
       return true;
     }
-    return this.prefs.getSync(KEY_PUSH_ENABLED, true) as boolean;
+    return this.safeGetSync(KEY_PUSH_ENABLED, true) as boolean;
   }
 
   async savePushEnabled(enabled: boolean): Promise<void> {
-    this.prefs!.putSync(KEY_PUSH_ENABLED, enabled);
-    await this.prefs!.flush();
+    this.safePutSync(KEY_PUSH_ENABLED, enabled);
+    await this.safeFlush();
   }
 
   getSoundEnabled(): boolean {
     if (!this.prefs) {
       return true;
     }
-    return this.prefs.getSync(KEY_SOUND_ENABLED, true) as boolean;
+    return this.safeGetSync(KEY_SOUND_ENABLED, true) as boolean;
   }
 
   async saveSoundEnabled(enabled: boolean): Promise<void> {
-    this.prefs!.putSync(KEY_SOUND_ENABLED, enabled);
-    await this.prefs!.flush();
+    this.safePutSync(KEY_SOUND_ENABLED, enabled);
+    await this.safeFlush();
   }
 
   getVibrateEnabled(): boolean {
     if (!this.prefs) {
       return false;
     }
-    return this.prefs.getSync(KEY_VIBRATE_ENABLED, false) as boolean;
+    return this.safeGetSync(KEY_VIBRATE_ENABLED, false) as boolean;
   }
 
   async saveVibrateEnabled(enabled: boolean): Promise<void> {
-    this.prefs!.putSync(KEY_VIBRATE_ENABLED, enabled);
-    await this.prefs!.flush();
+    this.safePutSync(KEY_VIBRATE_ENABLED, enabled);
+    await this.safeFlush();
   }
 }

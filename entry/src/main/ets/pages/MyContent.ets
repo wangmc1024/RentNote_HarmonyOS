@@ -2,7 +2,6 @@ import { Colors, Fonts, FontSizes, Dimensions, Radius, Shadows, Spacing } from '
 import { MenuItemRow } from '../components/MenuItemRow';
 import { UserProfile } from '../model/PropertyModel';
 import { PropertyRepository } from '../repository/PropertyRepository';
-import { promptAction } from '@kit.ArkUI';
 
 @ComponentV2
 export struct MyContent {
@@ -31,7 +30,7 @@ export struct MyContent {
   }
 
   private showClearDataDialog(): void {
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       message: '确认清除所有数据？将删除全部房源、租期和个人资料信息，且无法恢复。',
       primaryButton: {
         value: '确认清除',
@@ -39,7 +38,7 @@ export struct MyContent {
           this.repository.clearAll().then(() => {
             this.refreshFlag++;
             this.loadProfile();
-            promptAction.showToast({ message: '数据已清除', duration: 2000 });
+            this.getUIContext().getPromptAction().showToast({ message: '数据已清除', duration: 2000 });
           });
         }
       },

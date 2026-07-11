@@ -6,7 +6,7 @@
  * 统一使用 HeaderBar 组件
  */
 import { Colors, Fonts, FontSizes, Dimensions, Radius, Shadows, Spacing } from '../common/DesignTokens';
-import { promptAction } from '@kit.ArkUI';
+
 import { HeaderBar } from '../components/HeaderBar';
 import { TagCategory } from '../model/TagModel';
 import { PropertyInfo, PropertyIdParam, SaveResult, DeleteResult, MapPickerResult } from '../model/PropertyModel';
@@ -108,7 +108,10 @@ export struct AddPropertyPage {
         this.imageUris = [...this.imageUris, ...result.photoUris];
       }
     } catch (_e) {
-      promptAction.showToast({ message: '选择图片失败', duration: 2000 });
+      try {
+        this.getUIContext().getPromptAction().showToast({ message: '选择图片失败', duration: 2000 });
+      } catch (_ee) {
+      }
     }
   }
 
@@ -119,10 +122,13 @@ export struct AddPropertyPage {
   }
 
   private extractDistrict(address: string): string {
-    const pattern: RegExp = new RegExp('[\\u4e00-\\u9fa5]{2,3}[区县]');
-    const match: RegExpMatchArray | null = address.match(pattern);
-    if (match && match.length > 0) {
-      return match[0];
+    let results: string[] = address.match(new RegExp('[\\u4e00-\\u9fa5]{2}[区县]', 'g')) ?? [];
+    if (results.length > 0) {
+      return results[results.length - 1];
+    }
+    results = address.match(new RegExp('[\\u4e00-\\u9fa5]{3}[区县]', 'g')) ?? [];
+    if (results.length > 0) {
+      return results[results.length - 1];
     }
     return address.length > 3 ? address.substring(0, 3) : address;
   }
@@ -148,7 +154,7 @@ export struct AddPropertyPage {
 
     this.viewModel.saveProperty(property).then((success: boolean) => {
       if (success) {
-        promptAction.showToast({
+        this.getUIContext().getPromptAction().showToast({
           message: '保存成功',
           duration: 2000
         });
@@ -745,7 +751,7 @@ export struct AddPropertyPage {
   }
 
   private showDemoteDialog(): void {
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       message: '取消选定后，该房源将退回备选列表，租期信息将被清除。',
       primaryButton: {
         value: '确认取消',
@@ -766,7 +772,7 @@ export struct AddPropertyPage {
   }
 
   private showDeleteDialog(): void {
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       message: '确认删除此房源？删除后无法恢复。',
       primaryButton: {
         value: '确认删除',

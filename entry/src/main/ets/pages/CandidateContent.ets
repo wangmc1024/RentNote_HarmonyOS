@@ -86,9 +86,12 @@ export struct CandidateContent {
           title: p.name,
           snippet: p.district.length > 0 ? p.district : undefined
         };
-        const marker: map.Marker = await this.mapController.addMarker(markerOptions);
-        this.addedMarkers.push(marker);
-        this.markerPropertyIds.push(p.id);
+        try {
+          const marker: map.Marker = await this.mapController.addMarker(markerOptions);
+          this.addedMarkers.push(marker);
+          this.markerPropertyIds.push(p.id);
+        } catch (_e) {
+        }
       }
     }
   }

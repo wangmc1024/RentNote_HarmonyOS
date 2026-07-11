@@ -58,7 +58,7 @@ export struct PropertyDetailPage {
     };
   }
 
-  private addPropertyMarker(): void {
+  private async addPropertyMarker(): Promise<void> {
     if (!this.mapController || !this.viewModel.property) {
       return;
     }
@@ -74,9 +74,11 @@ export struct PropertyDetailPage {
         anchorV: 1,
         title: p.name
       };
-      this.mapController.addMarker(markerOptions).then((marker: map.Marker) => {
+      try {
+        const marker: map.Marker = await this.mapController.addMarker(markerOptions);
         this.detailMarker = marker;
-      });
+      } catch (_e) {
+      }
       const cameraPosition: mapCommon.CameraPosition = {
         target: {
           latitude: p.latitude,
@@ -89,7 +91,7 @@ export struct PropertyDetailPage {
     }
   }
 
-  private refreshMapMarker(): void {
+  private async refreshMapMarker(): Promise<void> {
     if (!this.mapController || !this.viewModel.property) {
       return;
     }
@@ -109,9 +111,11 @@ export struct PropertyDetailPage {
         anchorV: 1,
         title: p.name
       };
-      this.mapController.addMarker(markerOptions).then((marker: map.Marker) => {
+      try {
+        const marker: map.Marker = await this.mapController.addMarker(markerOptions);
         this.detailMarker = marker;
-      });
+      } catch (_e) {
+      }
       const cameraPosition: mapCommon.CameraPosition = {
         target: {
           latitude: p.latitude,
@@ -486,7 +490,7 @@ export struct PropertyDetailPage {
 
   /** 显示删除确认弹窗 */
   private showDeleteDialog(id: string): void {
-    AlertDialog.show({
+    this.getUIContext().showAlertDialog({
       message: '确认删除此房源？删除后无法恢复。',
       primaryButton: {
         value: '确认删除',
