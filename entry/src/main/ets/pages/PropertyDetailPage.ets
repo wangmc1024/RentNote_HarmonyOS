@@ -411,6 +411,37 @@ export struct PropertyDetailPage {
           .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
         }
 
+        // ===== 备注卡片 =====
+        if (property.notes.length > 0) {
+          Column() {
+            Text('备注')
+              .fontSize(FontSizes.SECTION_TITLE)
+              .fontColor(Colors.TEXT_PRIMARY)
+              .fontFamily(Fonts.CN)
+              .fontWeight(FontWeight.Bold)
+              .alignSelf(ItemAlign.Start)
+
+            Text(property.notes)
+              .fontSize(FontSizes.BODY_SMALL)
+              .fontColor(Colors.TEXT_SECONDARY)
+              .fontFamily(Fonts.CN)
+              .lineHeight(22)
+              .margin({ top: 8 })
+              .alignSelf(ItemAlign.Start)
+          }
+          .width('100%')
+          .backgroundColor(Colors.CARD_BG)
+          .borderRadius(Radius.CARD)
+          .padding(Spacing.CARD_PADDING)
+          .shadow({
+            radius: Shadows.CARD.radius,
+            color: Shadows.CARD.color,
+            offsetX: Shadows.CARD.offsetX,
+            offsetY: Shadows.CARD.offsetY
+          })
+          .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
+        }
+
         // ===== 操作按钮 =====
         Row() {
           Button('编辑房源')

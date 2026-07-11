@@ -656,6 +656,17 @@ struct CandidateCard {
           .width('100%')
           .margin({ top: 10 })
         }
+
+        if (this.property.notes.length > 0) {
+          Text(this.property.notes)
+            .fontSize(FontSizes.CAPTION)
+            .fontColor(Colors.TEXT_MUTED)
+            .fontFamily(Fonts.CN)
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .margin({ top: 8 })
+            .alignSelf(ItemAlign.Start)
+        }
       }
       .layoutWeight(1)
       .backgroundColor(Colors.CARD_BG)

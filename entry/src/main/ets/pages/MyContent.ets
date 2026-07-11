@@ -151,7 +151,7 @@ export struct MyContent {
 
         Column() {
           MenuItemRow({
-            iconName: 'sys.symbol.tray_and_arrow_down',
+            iconName: 'sys.symbol.arrow_clockwise',
             label: '数据导入',
             onAction: () => {
               this.navPathStack.pushPathByName('DataImport', null);

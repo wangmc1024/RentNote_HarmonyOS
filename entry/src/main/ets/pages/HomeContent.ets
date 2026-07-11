@@ -280,6 +280,17 @@ export struct HomeContent {
         .width('100%')
         .margin({ top: 12 })
       }
+
+      if (this.viewModel.rentingProperties[0].notes.length > 0) {
+        Text(this.viewModel.rentingProperties[0].notes)
+          .fontSize(FontSizes.CAPTION)
+          .fontColor(Colors.TEXT_MUTED)
+          .fontFamily(Fonts.CN)
+          .maxLines(2)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .margin({ top: 8 })
+          .width('100%')
+      }
     }
     .width('100%')
     .backgroundColor(Colors.CARD_BG)

@@ -49,7 +49,6 @@ export struct AddPropertyPage {
 
   aboutToAppear(): void {
     this.viewModel.setAddMode();
-    this.viewModel.isCandidateMode = true;
   }
 
   /** 加载编辑房源数据预填充 */
@@ -192,7 +191,26 @@ export struct AddPropertyPage {
               .alignSelf(ItemAlign.Start)
 
             // 小区名
-            this.SectionField('小区名', '请输入小区名称', 48, this.communityName, (v: string) => { this.communityName = v })
+            Column({ space: 8 }) {
+              Text('小区名')
+                .fontSize(FontSizes.BODY)
+                .fontColor(Colors.TEXT_PRIMARY)
+                .fontFamily(Fonts.CN)
+                .fontWeight(FontWeight.Medium)
+                .alignSelf(ItemAlign.Start)
+
+              TextInput({ placeholder: '请输入小区名称', text: this.communityName })
+                .width('100%')
+                .height(48)
+                .backgroundColor(Colors.CARD_BG)
+                .borderRadius(Radius.CARD_SM)
+                .padding({ left: Spacing.CARD_PADDING_SM, right: Spacing.CARD_PADDING_SM })
+                .fontSize(FontSizes.BODY_LARGE)
+                .fontColor(Colors.TEXT_PRIMARY)
+                .fontFamily(Fonts.CN)
+                .placeholderColor(Colors.TEXT_MUTED)
+                .onChange((v: string) => { this.communityName = v })
+            }
 
             // 详细地址
             Column({ space: 8 }) {
@@ -330,12 +348,146 @@ export struct AddPropertyPage {
               .fontWeight(FontWeight.Bold)
               .alignSelf(ItemAlign.Start)
 
-            this.SectionField('月租金', '¥ 0.00', 48, this.monthlyRent, (v: string) => { this.monthlyRent = v })
-            this.SectionField('押金', '¥ 0.00', 48, this.deposit, (v: string) => { this.deposit = v })
+            Column({ space: 8 }) {
+              Text('月租金')
+                .fontSize(FontSizes.BODY)
+                .fontColor(Colors.TEXT_PRIMARY)
+                .fontFamily(Fonts.CN)
+                .fontWeight(FontWeight.Medium)
+                .alignSelf(ItemAlign.Start)
+
+              TextInput({ placeholder: '¥ 0.00', text: this.monthlyRent })
+                .width('100%')
+                .height(48)
+                .backgroundColor(Colors.CARD_BG)
+                .borderRadius(Radius.CARD_SM)
+                .padding({ left: Spacing.CARD_PADDING_SM, right: Spacing.CARD_PADDING_SM })
+                .fontSize(FontSizes.BODY_LARGE)
+                .fontColor(Colors.TEXT_PRIMARY)
+                .fontFamily(Fonts.CN)
+                .placeholderColor(Colors.TEXT_MUTED)
+                .onChange((v: string) => { this.monthlyRent = v })
+            }
+
+            Column({ space: 8 }) {
+              Text('押金')
+                .fontSize(FontSizes.BODY)
+                .fontColor(Colors.TEXT_PRIMARY)
+                .fontFamily(Fonts.CN)
+                .fontWeight(FontWeight.Medium)
+                .alignSelf(ItemAlign.Start)
+
+              TextInput({ placeholder: '¥ 0.00', text: this.deposit })
+                .width('100%')
+                .height(48)
+                .backgroundColor(Colors.CARD_BG)
+                .borderRadius(Radius.CARD_SM)
+                .padding({ left: Spacing.CARD_PADDING_SM, right: Spacing.CARD_PADDING_SM })
+                .fontSize(FontSizes.BODY_LARGE)
+                .fontColor(Colors.TEXT_PRIMARY)
+                .fontFamily(Fonts.CN)
+                .placeholderColor(Colors.TEXT_MUTED)
+                .onChange((v: string) => { this.deposit = v })
+            }
 
             Row({ space: 12 }) {
-              this.DateField('入住时间', '2024.07.01', this.startDate, (v: string) => { this.startDate = v })
-              this.DateField('到期时间', '2025.07.01', this.endDate, (v: string) => { this.endDate = v })
+              Column({ space: 8 }) {
+                Text('入住时间')
+                  .fontSize(FontSizes.BODY)
+                  .fontColor(Colors.TEXT_PRIMARY)
+                  .fontFamily(Fonts.CN)
+                  .fontWeight(FontWeight.Medium)
+                  .alignSelf(ItemAlign.Start)
+
+                Row() {
+                  Text(this.startDate.length > 0 ? this.startDate : '2024.07.01')
+                    .fontSize(FontSizes.BODY_LARGE)
+                    .fontColor(this.startDate.length > 0 ? Colors.TEXT_PRIMARY : Colors.TEXT_MUTED)
+                    .fontFamily(Fonts.NUMBER)
+
+                  Blank()
+
+                  SymbolGlyph($r('sys.symbol.calendar'))
+                    .fontSize(16)
+                    .fontColor([Colors.TEXT_MUTED])
+                }
+                .width('100%')
+                .height(48)
+                .backgroundColor(Colors.CARD_BG)
+                .borderRadius(Radius.CARD_SM)
+                .padding({ left: Spacing.CARD_PADDING_SM, right: Spacing.CARD_PADDING_SM })
+                .alignItems(VerticalAlign.Center)
+                .onClick(() => {
+                  let selectedDate: Date = new Date();
+                  if (this.startDate.length > 0) {
+                    const parts: string[] = this.startDate.split('.');
+                    if (parts.length === 3) {
+                      selectedDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    }
+                  }
+                  this.getUIContext().showDatePickerDialog({
+                    start: new Date('2020-01-01'),
+                    end: new Date('2099-12-31'),
+                    selected: selectedDate,
+                    onDateAccept: (dateValue: Date) => {
+                      const y: number = dateValue.getFullYear();
+                      const m: string = (dateValue.getMonth() + 1).toString().padStart(2, '0');
+                      const d: string = dateValue.getDate().toString().padStart(2, '0');
+                      this.startDate = y.toString() + '.' + m + '.' + d;
+                    }
+                  });
+                })
+              }
+              .layoutWeight(1)
+
+              Column({ space: 8 }) {
+                Text('到期时间')
+                  .fontSize(FontSizes.BODY)
+                  .fontColor(Colors.TEXT_PRIMARY)
+                  .fontFamily(Fonts.CN)
+                  .fontWeight(FontWeight.Medium)
+                  .alignSelf(ItemAlign.Start)
+
+                Row() {
+                  Text(this.endDate.length > 0 ? this.endDate : '2025.07.01')
+                    .fontSize(FontSizes.BODY_LARGE)
+                    .fontColor(this.endDate.length > 0 ? Colors.TEXT_PRIMARY : Colors.TEXT_MUTED)
+                    .fontFamily(Fonts.NUMBER)
+
+                  Blank()
+
+                  SymbolGlyph($r('sys.symbol.calendar'))
+                    .fontSize(16)
+                    .fontColor([Colors.TEXT_MUTED])
+                }
+                .width('100%')
+                .height(48)
+                .backgroundColor(Colors.CARD_BG)
+                .borderRadius(Radius.CARD_SM)
+                .padding({ left: Spacing.CARD_PADDING_SM, right: Spacing.CARD_PADDING_SM })
+                .alignItems(VerticalAlign.Center)
+                .onClick(() => {
+                  let selectedDate: Date = new Date();
+                  if (this.endDate.length > 0) {
+                    const parts: string[] = this.endDate.split('.');
+                    if (parts.length === 3) {
+                      selectedDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    }
+                  }
+                  this.getUIContext().showDatePickerDialog({
+                    start: new Date('2020-01-01'),
+                    end: new Date('2099-12-31'),
+                    selected: selectedDate,
+                    onDateAccept: (dateValue: Date) => {
+                      const y: number = dateValue.getFullYear();
+                      const m: string = (dateValue.getMonth() + 1).toString().padStart(2, '0');
+                      const d: string = dateValue.getDate().toString().padStart(2, '0');
+                      this.endDate = y.toString() + '.' + m + '.' + d;
+                    }
+                  });
+                })
+              }
+              .layoutWeight(1)
             }
             .width('100%')
 
@@ -573,84 +725,6 @@ export struct AddPropertyPage {
       }
     })
     .hideTitleBar(true)
-  }
-
-  // 通用表单字段构建器
-  @Builder
-  SectionField(label: string, placeholder: string, inputHeight: number, value: string, onChange: (v: string) => void) {
-    Column({ space: 8 }) {
-      Text(label)
-        .fontSize(FontSizes.BODY)
-        .fontColor(Colors.TEXT_PRIMARY)
-        .fontFamily(Fonts.CN)
-        .fontWeight(FontWeight.Medium)
-        .alignSelf(ItemAlign.Start)
-
-      TextInput({ placeholder: placeholder, text: value })
-        .width('100%')
-        .height(inputHeight)
-        .backgroundColor(Colors.CARD_BG)
-        .borderRadius(Radius.CARD_SM)
-        .padding({ left: Spacing.CARD_PADDING_SM, right: Spacing.CARD_PADDING_SM })
-        .fontSize(FontSizes.BODY_LARGE)
-        .fontColor(Colors.TEXT_PRIMARY)
-        .fontFamily(Fonts.CN)
-        .placeholderColor(Colors.TEXT_MUTED)
-        .onChange((v: string) => onChange(v))
-    }
-  }
-
-  // 日期字段构建器
-  @Builder
-  DateField(label: string, placeholder: string, value: string, onChange: (v: string) => void) {
-    Column({ space: 8 }) {
-      Text(label)
-        .fontSize(FontSizes.BODY)
-        .fontColor(Colors.TEXT_PRIMARY)
-        .fontFamily(Fonts.CN)
-        .fontWeight(FontWeight.Medium)
-        .alignSelf(ItemAlign.Start)
-
-      Row() {
-        Text(value.length > 0 ? value : placeholder)
-          .fontSize(FontSizes.BODY_LARGE)
-          .fontColor(value.length > 0 ? Colors.TEXT_PRIMARY : Colors.TEXT_MUTED)
-          .fontFamily(Fonts.NUMBER)
-
-        Blank()
-
-        SymbolGlyph($r('sys.symbol.calendar'))
-          .fontSize(16)
-          .fontColor([Colors.TEXT_MUTED])
-      }
-      .width('100%')
-      .height(48)
-      .backgroundColor(Colors.CARD_BG)
-      .borderRadius(Radius.CARD_SM)
-      .padding({ left: Spacing.CARD_PADDING_SM, right: Spacing.CARD_PADDING_SM })
-      .alignItems(VerticalAlign.Center)
-      .onClick(() => {
-        let selectedDate: Date = new Date();
-        if (value.length > 0) {
-          const parts: string[] = value.split('.');
-          if (parts.length === 3) {
-            selectedDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-          }
-        }
-        this.getUIContext().showDatePickerDialog({
-          start: new Date('2020-01-01'),
-          end: new Date('2099-12-31'),
-          selected: selectedDate,
-          onDateAccept: (dateValue: Date) => {
-            const y: number = dateValue.getFullYear();
-            const m: string = (dateValue.getMonth() + 1).toString().padStart(2, '0');
-            const d: string = dateValue.getDate().toString().padStart(2, '0');
-            onChange(y.toString() + '.' + m + '.' + d);
-          }
-        });
-      })
-    }
-    .layoutWeight(1)
   }
 
   @Builder
