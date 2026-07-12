@@ -6,13 +6,14 @@
  * 通过 @Consumer 获取 navPathStack 用于返回操作
  */
 import { Colors, Fonts, FontSizes, Dimensions, Radius } from '../common/DesignTokens';
+import { AppInfo } from '../common/AppInfo';
 import { HeaderBar } from '../components/HeaderBar';
 
 @Builder
 export function AboutBuilder() {
   AboutPage()
 }
-
+@Entry
 @ComponentV2
 export struct AboutPage {
   @Consumer('navPathStack') navPathStack: NavPathStack = new NavPathStack();
@@ -32,19 +33,16 @@ export struct AboutPage {
         Column() {
           // App 图标
           Row() {
-            SymbolGlyph($r('sys.symbol.house'))
-              .fontSize(36)
-              .fontColor([Colors.TEXT_WHITE])
+            Image($r('app.media.app_icon'))
+              .width(100)
+              .height(100)
           }
-          .width(Dimensions.APP_ICON_SIZE)
-          .height(Dimensions.APP_ICON_SIZE)
-          .backgroundColor(Colors.PRIMARY)
           .borderRadius(Radius.APP_ICON)
           .justifyContent(FlexAlign.Center)
           .margin({ top: 120 })
 
           // App 名称
-          Text('租房台账')
+          Text(AppInfo.NAME)
             .fontSize(FontSizes.TITLE_LARGE)
             .fontColor(Colors.TEXT_PRIMARY)
             .fontFamily(Fonts.CN)
@@ -52,14 +50,14 @@ export struct AboutPage {
             .margin({ top: 16 })
 
           // 版本号
-          Text('版本 1.0.0')
+          Text(AppInfo.VERSION_LABEL)
             .fontSize(FontSizes.BODY)
             .fontColor(Colors.TEXT_MUTED)
             .fontFamily(Fonts.CN)
             .margin({ top: 16 })
 
           // 描述
-          Text('华为鸿蒙租房记录元服务\n轻松管理租房台账，到期智能提醒')
+          Text(AppInfo.DESCRIPTION)
             .fontSize(FontSizes.BODY_SMALL)
             .fontColor(Colors.TEXT_SECONDARY)
             .fontFamily(Fonts.CN)
@@ -69,7 +67,7 @@ export struct AboutPage {
             .margin({ top: 16 })
 
           // 版权信息
-          Text('© 2026 子悦 · 个人商用\n保留所有权利')
+          Text(AppInfo.COPYRIGHT)
             .fontSize(FontSizes.CAPTION)
             .fontColor(Colors.TEXT_MUTED)
             .fontFamily(Fonts.CN)

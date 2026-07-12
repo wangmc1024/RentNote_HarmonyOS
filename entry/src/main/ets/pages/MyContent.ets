@@ -1,8 +1,10 @@
 import { Colors, Fonts, FontSizes, Dimensions, Radius, Shadows, Spacing } from '../common/DesignTokens';
+import { AppInfo } from '../common/AppInfo';
 import { MenuItemRow } from '../components/MenuItemRow';
 import { UserProfile } from '../model/PropertyModel';
 import { PropertyRepository } from '../repository/PropertyRepository';
 
+@Entry
 @ComponentV2
 export struct MyContent {
   @Local userName: string = '';
@@ -236,7 +238,7 @@ export struct MyContent {
         })
         .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: 16 })
 
-        Text('租房台账 v1.0 · 华为鸿蒙元服务')
+        Text(AppInfo.FOOTER_LABEL)
           .fontSize(FontSizes.CAPTION)
           .fontColor(Colors.TEXT_MUTED)
           .fontFamily(Fonts.CN)
