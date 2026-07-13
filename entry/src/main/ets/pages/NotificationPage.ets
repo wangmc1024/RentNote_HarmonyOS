@@ -10,8 +10,6 @@ export function NotificationBuilder() {
 
 @ComponentV2
 export struct NotificationPage {
-  @Local pushEnabled: boolean = true;
-  @Local soundEnabled: boolean = true;
   @Local vibrateEnabled: boolean = false;
   @Local reminderEnabled: boolean = true;
   @Local reminderDays: number = 30;
@@ -19,8 +17,6 @@ export struct NotificationPage {
 
   aboutToAppear(): void {
     const repo: PropertyRepository = PropertyRepository.getInstance();
-    this.pushEnabled = repo.getPushEnabled();
-    this.soundEnabled = repo.getSoundEnabled();
     this.vibrateEnabled = repo.getVibrateEnabled();
     this.reminderEnabled = repo.getReminderEnabled();
     this.reminderDays = repo.getReminderDays();
@@ -28,8 +24,6 @@ export struct NotificationPage {
 
   private async saveSettings(): Promise<void> {
     const repo: PropertyRepository = PropertyRepository.getInstance();
-    await repo.savePushEnabled(this.pushEnabled);
-    await repo.saveSoundEnabled(this.soundEnabled);
     await repo.saveVibrateEnabled(this.vibrateEnabled);
     await repo.saveReminderEnabled(this.reminderEnabled);
     await repo.saveReminderDays(this.reminderDays);
@@ -146,50 +140,6 @@ export struct NotificationPage {
                 .alignSelf(ItemAlign.Start)
 
               Row() {
-                Text('推送通知')
-                  .fontSize(FontSizes.BODY_LARGE)
-                  .fontColor(Colors.TEXT_PRIMARY)
-                  .fontFamily(Fonts.CN)
-                  .fontWeight(FontWeight.Medium)
-                  .margin({ left: Spacing.CARD_PADDING })
-
-                Blank()
-
-                Toggle({ type: ToggleType.Switch, isOn: this.pushEnabled })
-                  .onChange((value: boolean) => {
-                    this.pushEnabled = value;
-                    this.saveSettings();
-                  })
-                  .margin({ right: Spacing.CARD_PADDING })
-              }
-              .width('100%')
-              .height(52)
-
-              Divider().color(Colors.DIVIDER_LIGHT).strokeWidth(0.5).margin({ left: 20, right: 20 })
-
-              Row() {
-                Text('通知声音')
-                  .fontSize(FontSizes.BODY_LARGE)
-                  .fontColor(Colors.TEXT_PRIMARY)
-                  .fontFamily(Fonts.CN)
-                  .fontWeight(FontWeight.Medium)
-                  .margin({ left: Spacing.CARD_PADDING })
-
-                Blank()
-
-                Toggle({ type: ToggleType.Switch, isOn: this.soundEnabled })
-                  .onChange((value: boolean) => {
-                    this.soundEnabled = value;
-                    this.saveSettings();
-                  })
-                  .margin({ right: Spacing.CARD_PADDING })
-              }
-              .width('100%')
-              .height(52)
-
-              Divider().color(Colors.DIVIDER_LIGHT).strokeWidth(0.5).margin({ left: 20, right: 20 })
-
-              Row() {
                 Text('振动提醒')
                   .fontSize(FontSizes.BODY_LARGE)
                   .fontColor(Colors.TEXT_PRIMARY)
@@ -228,7 +178,7 @@ export struct NotificationPage {
                 .fontWeight(FontWeight.Medium)
                 .alignSelf(ItemAlign.Start)
 
-              Text('开启租约到期提醒后，系统将在到期前根据设定天数发送通知。推送通知用于接收租约到期、账单提醒等重要通知；通知声音和振动可自定义提醒方式。')
+              Text('开启租约到期提醒后，系统将在到期前根据设定天数发送通知。振动可自定义提醒方式。')
                 .fontSize(FontSizes.BODY_SMALL)
                 .fontColor(Colors.TEXT_SECONDARY)
                 .fontFamily(Fonts.CN)

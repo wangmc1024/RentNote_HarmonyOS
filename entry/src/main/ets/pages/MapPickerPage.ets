@@ -1,6 +1,7 @@
 import { MapComponent, mapCommon, map } from '@kit.MapKit';
-import { AsyncCallback } from '@kit.BasicServicesKit';
+import { AsyncCallback, BusinessError } from '@kit.BasicServicesKit';
 import { site } from '@kit.MapKit';
+import { geoLocationManager } from '@kit.LocationKit';
 import { Colors, Fonts, FontSizes, Dimensions, Radius, Spacing } from '../common/DesignTokens';
 import { MapPickerResult } from '../model/PropertyModel';
 
@@ -20,8 +21,8 @@ export function MapPickerBuilder() {
 
 @ComponentV2
 export struct MapPickerPage {
-  @Local selectedLat: number = 39.904;
-  @Local selectedLng: number = 116.407;
+  @Local selectedLat: number = 0;
+  @Local selectedLng: number = 0;
   @Local selectedAddress: string = '';
   @Local selectedSiteName: string = '';
   @Local hasSelection: boolean = false;
@@ -32,13 +33,18 @@ export struct MapPickerPage {
   private mapController?: map.MapComponentController;
   private mapEventManager?: map.MapEventManager;
   private pickerMarker?: map.Marker;
+  private initialLat: number = 39.904;
+  private initialLng: number = 116.407;
+  private hasLocated: boolean = false;
 
   aboutToAppear(): void {
+    this.requestCurrentLocation();
+
     this.mapOptions = {
       position: {
         target: {
-          latitude: this.selectedLat,
-          longitude: this.selectedLng
+          latitude: this.initialLat,
+          longitude: this.initialLng
         },
         zoom: 12
       }
@@ -50,8 +56,49 @@ export struct MapPickerPage {
         this.mapEventManager.on('mapClick', (position: mapCommon.LatLng) => {
           this.onMapClick(position);
         });
+        if (this.hasLocated) {
+          this.moveToCurrentLocation();
+        }
       }
     };
+  }
+
+  private requestCurrentLocation(): void {
+    try {
+      if (!geoLocationManager.isLocationEnabled()) {
+        return;
+      }
+    } catch (_e) {
+      return;
+    }
+    const request: geoLocationManager.SingleLocationRequest = {
+      'locatingPriority': geoLocationManager.LocatingPriority.PRIORITY_LOCATING_SPEED,
+      'locatingTimeoutMs': 10000
+    };
+    geoLocationManager.getCurrentLocation(request).then((result: geoLocationManager.Location) => {
+      this.initialLat = result.latitude;
+      this.initialLng = result.longitude;
+      this.hasLocated = true;
+      if (this.mapController) {
+        this.moveToCurrentLocation();
+      }
+    }).catch((_e: BusinessError) => {
+    });
+  }
+
+  private moveToCurrentLocation(): void {
+    if (!this.mapController) {
+      return;
+    }
+    const cameraPosition: mapCommon.CameraPosition = {
+      target: {
+        latitude: this.initialLat,
+        longitude: this.initialLng
+      },
+      zoom: 14
+    };
+    const cameraUpdate: map.CameraUpdate = map.newCameraPosition(cameraPosition);
+    this.mapController.moveCamera(cameraUpdate);
   }
 
   private async onMapClick(position: mapCommon.LatLng): Promise<void> {
@@ -92,7 +139,7 @@ export struct MapPickerPage {
       radius: 200
     };
     site.reverseGeocode(params).then((result: site.ReverseGeocodeResult) => {
-      this.selectedAddress = `${position.latitude.toFixed(4)}, ${position.longitude.toFixed(4)}`;
+      this.selectedAddress = '';
       this.selectedSiteName = '';
       const json: string = JSON.stringify(result);
       const parsed: ReverseGeoParsed = JSON.parse(json) as ReverseGeoParsed;
@@ -104,11 +151,14 @@ export struct MapPickerPage {
         this.selectedSiteName = parsed.sites[0].siteName ?? '';
       }
     }).catch(() => {
-      this.selectedAddress = `${position.latitude.toFixed(4)}, ${position.longitude.toFixed(4)}`;
+      this.selectedAddress = '';
     });
   }
 
   private confirmSelection(): void {
+    if (!this.hasSelection) {
+      return;
+    }
     const result: MapPickerResult = new MapPickerResult();
     result.latitude = this.selectedLat;
     result.longitude = this.selectedLng;

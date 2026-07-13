@@ -14,8 +14,6 @@ const KEY_VERSION: string = 'data_version';
 const KEY_USER_PROFILE: string = 'user_profile';
 const KEY_REMINDER_ENABLED: string = 'reminder_enabled';
 const KEY_REMINDER_DAYS: string = 'reminder_days';
-const KEY_PUSH_ENABLED: string = 'push_enabled';
-const KEY_SOUND_ENABLED: string = 'sound_enabled';
 const KEY_VIBRATE_ENABLED: string = 'vibrate_enabled';
 const DATA_VERSION: number = 4;
 
@@ -349,19 +347,6 @@ export class PropertyRepository {
     }
   }
 
-  async batchDelete(ids: string[]): Promise<void> {
-    for (const id of ids) {
-      const target: PropertyInfo | undefined = this.properties.find((item: PropertyInfo) => item.id === id);
-      if (target) {
-        this.deleteImageFiles(target);
-      }
-    }
-    this.properties = this.properties.filter((item: PropertyInfo) => !ids.includes(item.id));
-    await this.saveToPrefs();
-    this.notifyWidgetUpdate();
-    this.refreshReminders();
-  }
-
   async clearAll(): Promise<void> {
     for (const p of this.properties) {
       this.deleteImageFiles(p);
@@ -381,7 +366,6 @@ export class PropertyRepository {
     const count: number = renting.length;
 
     const overview: StatisticsOverview = new StatisticsOverview();
-    overview.yearlyExpense = totalRent * 12;
     overview.monthlyAvgRent = count > 0 ? Math.round(totalRent / count) : 0;
     overview.rentingCount = count;
     return overview;
@@ -545,30 +529,6 @@ export class PropertyRepository {
 
   async saveReminderDays(days: number): Promise<void> {
     this.safePutSync(KEY_REMINDER_DAYS, days);
-    await this.safeFlush();
-  }
-
-  getPushEnabled(): boolean {
-    if (!this.prefs) {
-      return true;
-    }
-    return this.safeGetSync(KEY_PUSH_ENABLED, true) as boolean;
-  }
-
-  async savePushEnabled(enabled: boolean): Promise<void> {
-    this.safePutSync(KEY_PUSH_ENABLED, enabled);
-    await this.safeFlush();
-  }
-
-  getSoundEnabled(): boolean {
-    if (!this.prefs) {
-      return true;
-    }
-    return this.safeGetSync(KEY_SOUND_ENABLED, true) as boolean;
-  }
-
-  async saveSoundEnabled(enabled: boolean): Promise<void> {
-    this.safePutSync(KEY_SOUND_ENABLED, enabled);
     await this.safeFlush();
   }
 

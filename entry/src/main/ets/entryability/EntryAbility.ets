@@ -2,7 +2,6 @@ import { UIAbility, Want, AbilityConstant } from '@kit.AbilityKit';
 import { window, AppStorageV2 } from '@kit.ArkUI';
 import { PropertyRepository } from '../repository/PropertyRepository';
 import { WidgetNavigateState } from '../model/PropertyModel';
-// import { ReminderService } from '../service/ReminderService';
 
 export default class EntryAbility extends UIAbility {
   async onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): Promise<void> {

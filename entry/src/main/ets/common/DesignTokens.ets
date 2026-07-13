@@ -100,7 +100,6 @@ export class Radius {
 // ============ 尺寸系统 ============
 export class Dimensions {
   static readonly HEADER_HEIGHT: number = 56;
-  static readonly TAB_BAR_HEIGHT: number = 95;
   static readonly TAB_PILL_HEIGHT: number = 62;
   static readonly TAB_PILL_WIDTH: number = 348;
   static readonly TAB_PILL_MARGIN: number = 21;

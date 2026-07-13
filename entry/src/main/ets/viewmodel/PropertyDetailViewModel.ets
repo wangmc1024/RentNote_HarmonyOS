@@ -35,15 +35,6 @@ export class PropertyDetailViewModel {
     this.propertyVersion++;
   }
 
-  async toggleBillsPaid(id: string): Promise<void> {
-    const current: PropertyInfo | undefined = this.repository.getPropertyById(id);
-    if (current) {
-      const newValue: number = current.billsPaid > 0 ? 0 : 1;
-      await this.repository.updateBillsPaid(id, newValue);
-      this.refreshProperty(id);
-    }
-  }
-
   async updateBillsPaid(id: string, billsPaid: number): Promise<void> {
     await this.repository.updateBillsPaid(id, billsPaid);
     this.refreshProperty(id);

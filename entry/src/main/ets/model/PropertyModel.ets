@@ -95,7 +95,6 @@ export class PropertyDTO {
 }
 @ObservedV2
 export class StatisticsOverview {
-  @Trace yearlyExpense: number = 0;
   @Trace monthlyAvgRent: number = 0;
   @Trace rentingCount: number = 0;
 }

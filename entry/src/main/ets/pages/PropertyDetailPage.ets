@@ -11,7 +11,7 @@ import { PropertyDetailViewModel } from '../viewmodel/PropertyDetailViewModel';
 import { PropertyInfo, PropertyIdParam, DeleteResult } from '../model/PropertyModel';
 import { PropertyRepository } from '../repository/PropertyRepository';
 import { MapComponent, mapCommon, map } from '@kit.MapKit';
-import { AsyncCallback } from '@kit.BasicServicesKit';
+import { AsyncCallback, BusinessError } from '@kit.BasicServicesKit';
 
 @Builder
 export function PropertyDetailBuilder() {

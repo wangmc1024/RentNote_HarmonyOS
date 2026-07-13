@@ -776,26 +776,6 @@ export struct AddPropertyPage {
     .hideTitleBar(true)
   }
 
-  private showDemoteDialog(): void {
-    this.getUIContext().showAlertDialog({
-      message: '取消选定后，该房源将退回备选列表，租期信息将被清除。',
-      primaryButton: {
-        value: '确认取消',
-        action: () => {
-          if (this.viewModel.editPropertyId) {
-            this.viewModel.demoteRenting(this.viewModel.editPropertyId).then(() => {
-              this.refreshFlag++;
-              this.navPathStack.pop();
-            });
-          }
-        }
-      },
-      secondaryButton: {
-        value: '返回',
-        action: () => {}
-      }
-    });
-  }
 
   private showDeleteDialog(): void {
     this.getUIContext().showAlertDialog({

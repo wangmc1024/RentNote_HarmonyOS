@@ -147,14 +147,6 @@ export struct MyContent {
         })
 
         Column() {
-          // 通知设置（atomicservice 不支持本地通知，已注释）
-          // MenuItemRow({
-          //   iconName: 'sys.symbol.bell',
-          //   label: '通知设置',
-          //   onAction: () => {
-          //     this.navPathStack.pushPathByName('Notification', null);
-          //   }
-          // })
           MenuItemRow({
             iconName: 'sys.symbol.widget',
             label: '添加桌面小组件',

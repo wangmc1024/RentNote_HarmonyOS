@@ -12,7 +12,6 @@ export function DataImportBuilder() {
 @ComponentV2
 export struct DataImportPage {
   @Local importStatus: string = '';
-  @Local importedCount: number = 0;
   @Consumer('navPathStack') navPathStack: NavPathStack = new NavPathStack();
   @Consumer('refreshFlag') refreshFlag: number = 0;
 
@@ -39,7 +38,6 @@ export struct DataImportPage {
       const jsonStr: string = decoder.decodeToString(new Uint8Array(buffer));
       const count: number = await this.repository.importFromJson(jsonStr);
       if (count > 0) {
-        this.importedCount = count;
         this.importStatus = `成功导入 ${count} 条房源`;
         this.refreshFlag++;
         this.getUIContext().getPromptAction().showToast({ message: `成功导入 ${count} 条房源`, duration: 2000 });

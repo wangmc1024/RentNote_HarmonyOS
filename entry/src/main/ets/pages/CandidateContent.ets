@@ -2,7 +2,7 @@ import { Colors, Fonts, FontSizes, Dimensions, Radius, Shadows, Spacing, getTagT
 import { PropertyInfo, PropertyIdParam } from '../model/PropertyModel';
 import { HomeViewModel } from '../viewmodel/HomeViewModel';
 import { MapComponent, mapCommon, map } from '@kit.MapKit';
-import { AsyncCallback } from '@kit.BasicServicesKit';
+import { AsyncCallback, BusinessError } from '@kit.BasicServicesKit';
 
 @ComponentV2
 export struct CandidateContent {
