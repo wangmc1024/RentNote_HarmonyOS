@@ -5,7 +5,7 @@
  * Emoji 替换为 SymbolGlyph
  * 通过 @Consumer 获取 navPathStack 用于返回操作
  */
-import { Colors, Fonts, FontSizes, Dimensions, Radius } from '../common/DesignTokens';
+import { Colors, Fonts, FontSizes, Radius } from '../common/DesignTokens';
 import { AppInfo } from '../common/AppInfo';
 import { HeaderBar } from '../components/HeaderBar';
 
@@ -13,7 +13,6 @@ import { HeaderBar } from '../components/HeaderBar';
 export function AboutBuilder() {
   AboutPage()
 }
-@Entry
 @ComponentV2
 export struct AboutPage {
   @Consumer('navPathStack') navPathStack: NavPathStack = new NavPathStack();

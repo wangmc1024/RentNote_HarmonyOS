@@ -128,20 +128,7 @@ export struct PropertyDetailPage {
       if (param && param.propertyId) {
         this.propertyId = param.propertyId;
         this.viewModel.loadProperty(this.propertyId).then(() => {
-          if (this.viewModel.property) {
-            const p: PropertyInfo = this.viewModel.property as PropertyInfo;
-            if (p.latitude !== 0 && p.longitude !== 0) {
-              this.mapOptions = {
-                position: {
-                  target: {
-                    latitude: p.latitude,
-                    longitude: p.longitude
-                  },
-                  zoom: 14
-                }
-              };
-            }
-          }
+          this.refreshMapMarker();
         });
       }
     })

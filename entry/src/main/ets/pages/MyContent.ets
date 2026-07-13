@@ -4,7 +4,6 @@ import { MenuItemRow } from '../components/MenuItemRow';
 import { UserProfile } from '../model/PropertyModel';
 import { PropertyRepository } from '../repository/PropertyRepository';
 
-@Entry
 @ComponentV2
 export struct MyContent {
   @Local userName: string = '';

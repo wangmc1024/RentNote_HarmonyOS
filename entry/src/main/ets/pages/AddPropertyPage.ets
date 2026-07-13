@@ -291,9 +291,9 @@ export struct AddPropertyPage {
                 .borderRadius(8)
                 .justifyContent(FlexAlign.Center)
                 .onClick(() => {
-                  this.navPathStack.pushPathByName('MapPicker', null, (popResult: Object | undefined) => {
-                    if (popResult) {
-                      const mapResult: MapPickerResult = popResult as MapPickerResult;
+                  this.navPathStack.pushPathByName('MapPicker', null, (popInfo: PopInfo) => {
+                    if (popInfo.result) {
+                      const mapResult: MapPickerResult = popInfo.result as MapPickerResult;
                       this.latitude = mapResult.latitude;
                       this.longitude = mapResult.longitude;
                       if (mapResult.address && mapResult.address.length > 0) {

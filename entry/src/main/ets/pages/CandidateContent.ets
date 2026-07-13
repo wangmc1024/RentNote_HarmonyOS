@@ -30,7 +30,9 @@ export struct CandidateContent {
   }
 
   aboutToAppear(): void {
-    this.viewModel.loadData();
+    this.viewModel.loadData().then(() => {
+      this.updateMarkers();
+    });
     this.mapOptions = {
       position: {
         target: {

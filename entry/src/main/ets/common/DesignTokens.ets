@@ -37,7 +37,6 @@ export class Colors {
 
   // 卡片和表面
   static readonly CARD_BG: string = '#FFFFFF';
-  static readonly DIVIDER: string = '#F3F4F6';
   static readonly DIVIDER_LIGHT: string = '#F3F3F5';
   static readonly DIVIDER_DARK: string = '#E7E7EA';
 
@@ -82,7 +81,6 @@ export class Spacing {
   static readonly CARD_PADDING_SM: number = 16;
   static readonly ITEM_GAP: number = 12;
   static readonly ITEM_GAP_SM: number = 8;
-  static readonly ITEM_GAP_XS: number = 4;
   static readonly CONTENT_GAP: number = 16;
 }
 
@@ -93,46 +91,28 @@ export class Radius {
   static readonly BUTTON: number = 14;
   static readonly TAG: number = 14;
   static readonly ICON_BG: number = 10;
-  static readonly BAR: number = 4;
   static readonly AVATAR: number = 32;
   static readonly APP_ICON: number = 20;
   static readonly TAB_PILL_OUTER: number = 36;
   static readonly TAB_PILL_INNER: number = 26;
-  static readonly BATTERY: number = 3;
 }
 
 // ============ 尺寸系统 ============
 export class Dimensions {
-  static readonly STATUS_BAR_HEIGHT: number = 62;
   static readonly HEADER_HEIGHT: number = 56;
   static readonly TAB_BAR_HEIGHT: number = 95;
   static readonly TAB_PILL_HEIGHT: number = 62;
   static readonly TAB_PILL_WIDTH: number = 348;
   static readonly TAB_PILL_MARGIN: number = 21;
 
-  // 卡片
-  static readonly SUMMARY_CARD_HEIGHT: number = 77;
-  static readonly PROPERTY_CARD_HEIGHT: number = 80;
-  static readonly PROFILE_CARD_HEIGHT: number = 174;
   static readonly MAP_CARD_HEIGHT: number = 180;
   static readonly BILL_CARD_HEIGHT: number = 91;
-  static readonly CHART_CARD_HEIGHT: number = 219;
 
-  // 按钮
   static readonly BUTTON_HEIGHT: number = 48;
   static readonly FAB_SIZE: number = 56;
 
   // 头像
   static readonly AVATAR_SIZE: number = 64;
-  static readonly APP_ICON_SIZE: number = 80;
-
-  // 图标尺寸
-  static readonly ICON_SIZE_TAB: number = 16;      // Tab 栏图标
-  static readonly ICON_SIZE_CARD: number = 22;     // 卡片图标
-  static readonly ICON_SIZE_MENU: number = 18;     // 菜单项图标
-  static readonly ICON_SIZE_FAB: number = 24;      // FAB 按钮图标
-  static readonly ICON_SIZE_DETAIL: number = 36;   // 详情页大图标
-  static readonly ICON_SIZE_APP: number = 36;      // 应用图标（关于页）
 }
 
 // ============ 阴影系统 ============
@@ -157,14 +137,6 @@ export class Shadows {
   static readonly TAB_BAR: ShadowConfig = {
     radius: 16,
     color: 'rgba(0,0,0,0.08)',
-    offsetX: 0,
-    offsetY: 4
-  };
-
-  // 桌面卡片阴影: offset(0,4) blur(20) opacity(0.1)
-  static readonly WIDGET: ShadowConfig = {
-    radius: 20,
-    color: 'rgba(0,0,0,0.1)',
     offsetX: 0,
     offsetY: 4
   };

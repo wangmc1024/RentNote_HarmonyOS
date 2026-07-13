@@ -6,7 +6,6 @@ import EntryFormAbility from '../widget/EntryFormAbility';
 
 const PREFS_NAME: string = 'RentNotePrefs';
 const KEY_PROPERTIES: string = 'properties';
-const KEY_NEXT_ID: string = 'next_id';
 const KEY_VERSION: string = 'data_version';
 const KEY_USER_PROFILE: string = 'user_profile';
 const KEY_REMINDER_ENABLED: string = 'reminder_enabled';
@@ -94,7 +93,6 @@ export class PropertyRepository {
     const storedVersion: number = this.safeGetSync(KEY_VERSION, 0) as number;
     if (storedVersion === 0) {
       this.safePutSync(KEY_PROPERTIES, '[]');
-      this.safePutSync(KEY_NEXT_ID, 1);
       this.safePutSync(KEY_VERSION, DATA_VERSION);
       await this.safeFlush();
     } else if (storedVersion < DATA_VERSION) {
@@ -181,26 +179,9 @@ export class PropertyRepository {
     }
   }
 
-  private getNextId(): string {
-    const nextId: number = (this.safeGetSync(KEY_NEXT_ID, 1) as number);
-    return String(nextId);
-  }
-
-  private async consumeNextId(): Promise<string> {
-    const id: string = this.getNextId();
-    const nextVal: number = (this.safeGetSync(KEY_NEXT_ID, 1) as number) + 1;
-    this.safePutSync(KEY_NEXT_ID, nextVal);
-    await this.safeFlush();
-    return id;
-  }
-
   async reloadData(): Promise<void> {
     await this.ensureInit();
     this.loadFromPrefs();
-  }
-
-  getAllProperties(): PropertyInfo[] {
-    return this.properties;
   }
 
   getPropertyById(id: string): PropertyInfo | undefined {
@@ -209,7 +190,7 @@ export class PropertyRepository {
 
   async addProperty(property: PropertyInfo): Promise<void> {
     if (!property.id) {
-      property.id = await this.consumeNextId();
+      property.id = Date.now().toString();
     }
     this.properties = [...this.properties, property];
     await this.saveToPrefs();
@@ -322,7 +303,6 @@ export class PropertyRepository {
       this.deleteImageFiles(p);
     }
     this.properties = [];
-    this.safePutSync(KEY_NEXT_ID, 1);
     this.safePutSync(KEY_USER_PROFILE, '');
     await this.saveToPrefs();
     this.notifyWidgetUpdate();
