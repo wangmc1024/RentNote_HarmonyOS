@@ -47,7 +47,7 @@ export struct AgreementPage {
                 .fontWeight(FontWeight.Medium)
                 .alignSelf(ItemAlign.Start)
 
-              Text('租房台账是一款华为鸿蒙元服务应用，为用户提供租房信息管理、租金统计、到期提醒等功能。本服务仅供个人非商业用途使用。')
+              Text('小寓台账是一款华为鸿蒙元服务应用，为用户提供租房信息管理、租金统计、到期提醒等功能。本服务仅供个人非商业用途使用。')
                 .fontSize(FontSizes.BODY_SMALL)
                 .fontColor(Colors.TEXT_SECONDARY)
                 .fontFamily(Fonts.CN)

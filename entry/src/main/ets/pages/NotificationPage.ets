@@ -1,6 +1,7 @@
 import { Colors, Fonts, FontSizes, Radius, Shadows, Spacing } from '../common/DesignTokens';
 import { HeaderBar } from '../components/HeaderBar';
 import { PropertyRepository } from '../repository/PropertyRepository';
+import { ReminderService } from '../service/ReminderService';
 
 @Builder
 export function NotificationBuilder() {
@@ -32,6 +33,7 @@ export struct NotificationPage {
     await repo.saveVibrateEnabled(this.vibrateEnabled);
     await repo.saveReminderEnabled(this.reminderEnabled);
     await repo.saveReminderDays(this.reminderDays);
+    ReminderService.getInstance().markPending();
   }
 
   build() {

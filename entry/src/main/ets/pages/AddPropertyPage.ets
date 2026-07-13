@@ -211,13 +211,6 @@ export struct AddPropertyPage {
           showBack: true,
           onBack: () => {
             this.navPathStack.pop();
-          },
-          rightContent: (): void => {
-            if (this.viewModel.isEditMode && !this.viewModel.isCandidateMode) {
-              this.DemoteRightContent()
-            } else {
-              this.DefaultRightContent()
-            }
           }
         })
 
@@ -767,23 +760,6 @@ export struct AddPropertyPage {
       }
     })
     .hideTitleBar(true)
-  }
-
-  @Builder
-  DefaultRightContent() {
-    Row().width(24)
-  }
-
-  @Builder
-  DemoteRightContent() {
-    Text('取消选定')
-      .fontSize(FontSizes.BODY)
-      .fontColor(Colors.WARNING)
-      .fontFamily(Fonts.CN)
-      .fontWeight(FontWeight.Medium)
-      .onClick(() => {
-        this.showDemoteDialog();
-      })
   }
 
   private showDemoteDialog(): void {

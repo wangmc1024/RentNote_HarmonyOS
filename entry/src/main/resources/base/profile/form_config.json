@@ -2,7 +2,7 @@
   "forms": [
     {
       "name": "RentWidget",
-      "displayName": "租房台账",
+      "displayName": "小寓台账",
       "description": "显示本月租金和到期提醒",
       "src": "./ets/widget/pages/RentWidgetCard.ets",
       "uiSyntax": "arkts",

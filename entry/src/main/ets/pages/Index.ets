@@ -5,6 +5,7 @@ import { MyContent } from './MyContent';
 import { PropertyRepository } from '../repository/PropertyRepository';
 import { PropertyIdParam, WidgetNavigateState } from '../model/PropertyModel';
 import { AppStorageV2 } from '@kit.ArkUI';
+import { ReminderService, ReminderState } from '../service/ReminderService';
 
 @Entry
 @ComponentV2
@@ -13,6 +14,7 @@ struct Index {
   @Provider('refreshFlag') refreshFlag: number = 0;
   @Local currentTab: number = 1;
   @Local widgetState: WidgetNavigateState = AppStorageV2.connect(WidgetNavigateState, 'widgetNav', () => new WidgetNavigateState())!;
+  @Local reminderState: ReminderState = AppStorageV2.connect(ReminderState, 'reminderState', () => new ReminderState())!;
 
   private repository: PropertyRepository = PropertyRepository.getInstance();
 
@@ -25,6 +27,15 @@ struct Index {
         }
       }
     });
+    ReminderService.getInstance().checkAndNotify();
+  }
+
+  @Monitor('reminderState.pendingNotify')
+  onReminderPending(): void {
+    if (this.reminderState.pendingNotify) {
+      this.reminderState.pendingNotify = false;
+      ReminderService.getInstance().checkAndNotify();
+    }
   }
 
   @Monitor('widgetState.action')

@@ -104,8 +104,7 @@ export struct PropertyDetailPage {
             showBack: true,
             onBack: () => {
               this.navPathStack.pop();
-            },
-            rightContent: (): void => { this.EditRightContent() }
+            }
           })
 
           if (this.viewModel.property) {
@@ -180,21 +179,6 @@ export struct PropertyDetailPage {
     .width('100%')
     .height('100%')
     .backgroundColor('rgba(0,0,0,0.95)')
-  }
-
-  @Builder
-  EditRightContent() {
-    Text('编辑')
-      .fontSize(FontSizes.BODY_LARGE)
-      .fontColor(Colors.PRIMARY)
-      .fontFamily(Fonts.CN)
-      .fontWeight(FontWeight.Medium)
-      .onClick(() => {
-        if (this.viewModel.property) {
-          const editParam: PropertyIdParam = { propertyId: this.viewModel.property.id, mode: '' };
-          this.navPathStack.pushPathByName('AddProperty', editParam);
-        }
-      })
   }
 
   @Builder
@@ -328,44 +312,52 @@ export struct PropertyDetailPage {
 
         // ===== 账单卡片 =====
         if (property.status !== 'candidate') {
-          Row() {
-            Column() {
-              Text('本月应缴')
-                .fontSize(FontSizes.BODY)
-                .fontColor(Colors.TEXT_SECONDARY)
-                .fontFamily(Fonts.CN)
+          List() {
+            ListItem() {
+              Row() {
+                Column() {
+                  Text('本月应缴')
+                    .fontSize(FontSizes.BODY)
+                    .fontColor(Colors.TEXT_SECONDARY)
+                    .fontFamily(Fonts.CN)
 
-              Text('¥' + property.monthlyRent.toLocaleString())
-                .fontSize(FontSizes.TITLE)
-                .fontColor(Colors.TEXT_PRIMARY)
-                .fontFamily(Fonts.NUMBER)
-                .fontWeight(FontWeight.Bold)
-                .margin({ top: 4 })
-            }
+                  Text('¥' + property.monthlyRent.toLocaleString())
+                    .fontSize(FontSizes.TITLE)
+                    .fontColor(Colors.TEXT_PRIMARY)
+                    .fontFamily(Fonts.NUMBER)
+                    .fontWeight(FontWeight.Bold)
+                    .margin({ top: 4 })
+                }
 
-            Blank()
+                Blank()
 
-            Text(property.billsPaid > 0 ? '已缴纳' : '待缴纳')
-              .fontSize(FontSizes.BODY_SMALL)
-              .fontColor(property.billsPaid > 0 ? Colors.SUCCESS : Colors.WARNING)
-              .fontFamily(Fonts.CN)
-              .fontWeight(FontWeight.Medium)
-              .padding({ left: 12, right: 12, top: 6, bottom: 6 })
-              .backgroundColor(property.billsPaid > 0 ? Colors.SUCCESS_LIGHT : Colors.WARNING_LIGHT)
+                Text(property.billsPaid > 0 ? '已缴纳' : '待缴纳')
+                  .fontSize(FontSizes.BODY_SMALL)
+                  .fontColor(property.billsPaid > 0 ? Colors.SUCCESS : Colors.WARNING)
+                  .fontFamily(Fonts.CN)
+                  .fontWeight(FontWeight.Medium)
+                  .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+                  .backgroundColor(property.billsPaid > 0 ? Colors.SUCCESS_LIGHT : Colors.WARNING_LIGHT)
+                  .borderRadius(Radius.CARD)
+              }
+              .width('100%')
+              .height(Dimensions.BILL_CARD_HEIGHT)
+              .backgroundColor(Colors.CARD_BG)
               .borderRadius(Radius.CARD)
+              .padding({ left: Spacing.CARD_PADDING, right: Spacing.CARD_PADDING })
+              .shadow({
+                radius: Shadows.CARD.radius,
+                color: Shadows.CARD.color,
+                offsetX: Shadows.CARD.offsetX,
+                offsetY: Shadows.CARD.offsetY
+              })
+            }
+            .swipeAction({ end: this.BillSwipeAction(property) })
           }
+          .scrollBar(BarState.Off)
           .width('100%')
-          .height(Dimensions.BILL_CARD_HEIGHT)
-          .backgroundColor(Colors.CARD_BG)
-          .borderRadius(Radius.CARD)
-          .padding({ left: Spacing.CARD_PADDING, right: Spacing.CARD_PADDING })
-          .shadow({
-            radius: Shadows.CARD.radius,
-            color: Shadows.CARD.color,
-            offsetX: Shadows.CARD.offsetX,
-            offsetY: Shadows.CARD.offsetY
-          })
-          .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
+          .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
+          .margin({ top: Spacing.ITEM_GAP })
         }
 
         // ===== 备注卡片 =====
@@ -473,6 +465,45 @@ export struct PropertyDetailPage {
         action: () => {}
       }
     });
+  }
+
+  @Builder
+  BillSwipeAction(property: PropertyInfo) {
+    Row() {
+      Button('已缴纳')
+        .fontSize(FontSizes.BODY)
+        .fontColor(property.billsPaid > 0 ? Colors.TEXT_WHITE : Colors.SUCCESS)
+        .fontFamily(Fonts.CN)
+        .fontWeight(FontWeight.Medium)
+        .backgroundColor(property.billsPaid > 0 ? Colors.SUCCESS : Colors.SUCCESS_LIGHT)
+        .borderRadius(0)
+        .height('100%')
+        .width(80)
+        .onClick(() => {
+          if (property.billsPaid <= 0) {
+            this.viewModel.updateBillsPaid(property.id, 1).then(() => {
+              this.refreshFlag++;
+            });
+          }
+        })
+
+      Button('未缴纳')
+        .fontSize(FontSizes.BODY)
+        .fontColor(property.billsPaid > 0 ? Colors.WARNING : Colors.TEXT_WHITE)
+        .fontFamily(Fonts.CN)
+        .fontWeight(FontWeight.Medium)
+        .backgroundColor(property.billsPaid > 0 ? Colors.WARNING_LIGHT : Colors.WARNING)
+        .borderRadius(0)
+        .height('100%')
+        .width(80)
+        .onClick(() => {
+          if (property.billsPaid > 0) {
+            this.viewModel.updateBillsPaid(property.id, 0).then(() => {
+              this.refreshFlag++;
+            });
+          }
+        })
+    }
   }
 
   @Builder

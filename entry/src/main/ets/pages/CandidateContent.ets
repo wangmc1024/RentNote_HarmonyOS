@@ -9,8 +9,6 @@ export struct CandidateContent {
   @Local viewModel: HomeViewModel = new HomeViewModel();
   @Consumer('navPathStack') navPathStack: NavPathStack = new NavPathStack();
   @Consumer('refreshFlag') refreshFlag: number = 0;
-  @Local isEditMode: boolean = false;
-  @Local selectedIds: Set<string> = new Set();
   @Local isMapExpanded: boolean = false;
   @Local selectedMarkerPropertyId: string = '';
   @Local selectedMarkerPropertyName: string = '';
@@ -98,63 +96,6 @@ export struct CandidateContent {
     }
   }
 
-  private enterEditMode(id: string): void {
-    this.isEditMode = true;
-    this.selectedIds = new Set();
-    this.selectedIds.add(id);
-    this.selectedIds = new Set(this.selectedIds);
-  }
-
-  private toggleSelect(id: string): void {
-    if (this.selectedIds.has(id)) {
-      this.selectedIds.delete(id);
-    } else {
-      this.selectedIds.add(id);
-    }
-    this.selectedIds = new Set(this.selectedIds);
-  }
-
-  private selectAll(): void {
-    this.selectedIds = new Set();
-    for (const p of this.viewModel.candidateProperties) {
-      this.selectedIds.add(p.id);
-    }
-    this.selectedIds = new Set(this.selectedIds);
-  }
-
-  private deselectAll(): void {
-    this.selectedIds = new Set();
-  }
-
-  private exitEditMode(): void {
-    this.isEditMode = false;
-    this.selectedIds = new Set();
-  }
-
-  private async deleteSelected(): Promise<void> {
-    if (this.selectedIds.size === 0) {
-      return;
-    }
-    const ids: string[] = Array.from(this.selectedIds);
-    await this.viewModel.batchDeleteCandidates(ids);
-    this.refreshFlag++;
-    this.exitEditMode();
-  }
-
-  private isAllSelected(): boolean {
-    return this.viewModel.candidateProperties.length > 0 &&
-      this.viewModel.candidateProperties.every((p: PropertyInfo) => this.selectedIds.has(p.id));
-  }
-
-  private hasSingleSelection(): boolean {
-    return this.selectedIds.size === 1;
-  }
-
-  private getSelectedId(): string {
-    const arr: string[] = Array.from(this.selectedIds);
-    return arr.length > 0 ? arr[0] : '';
-  }
-
   private hasGeoProperties(): boolean {
     return this.viewModel.candidateProperties.some((p: PropertyInfo) => p.latitude !== 0 && p.longitude !== 0);
   }
@@ -177,65 +118,11 @@ export struct CandidateContent {
     Stack({ alignContent: Alignment.BottomEnd }) {
       Column() {
         Row() {
-          if (this.isEditMode) {
-            Text('取消')
-              .fontSize(FontSizes.BODY)
-              .fontColor(Colors.PRIMARY)
-              .fontFamily(Fonts.CN)
-              .fontWeight(FontWeight.Medium)
-              .onClick(() => {
-                this.exitEditMode();
-              })
-          } else {
-            Text('备选房源')
-              .fontSize(FontSizes.PAGE_TITLE)
-              .fontColor(Colors.TEXT_PRIMARY)
-              .fontFamily(Fonts.CN)
-              .fontWeight(FontWeight.Bold)
-          }
-
-          Blank()
-
-          if (this.isEditMode) {
-            if (this.hasSingleSelection() && !this.hasRentingProperty()) {
-              Button('选定')
-                .fontSize(FontSizes.BODY)
-                .fontColor(Colors.TEXT_WHITE)
-                .fontFamily(Fonts.CN)
-                .fontWeight(FontWeight.Medium)
-                .backgroundColor(Colors.SUCCESS)
-                .borderRadius(Radius.BUTTON)
-                .height(32)
-                .margin({ right: 12 })
-                .onClick(() => {
-                  this.viewModel.promoteCandidate(this.getSelectedId()).then(() => {
-                    this.refreshFlag++;
-                    this.exitEditMode();
-                  });
-                })
-            } else if (this.hasSingleSelection() && this.hasRentingProperty()) {
-              Text('已有选定')
-                .fontSize(FontSizes.BODY)
-                .fontColor(Colors.TEXT_MUTED)
-                .fontFamily(Fonts.CN)
-                .margin({ right: 12 })
-            }
-
-            if (this.viewModel.candidateProperties.length > 0) {
-              Text(this.isAllSelected() ? '取消全选' : '全选')
-                .fontSize(FontSizes.BODY)
-                .fontColor(Colors.PRIMARY)
-                .fontFamily(Fonts.CN)
-                .fontWeight(FontWeight.Medium)
-                .onClick(() => {
-                  if (this.isAllSelected()) {
-                    this.deselectAll();
-                  } else {
-                    this.selectAll();
-                  }
-                })
-            }
-          }
+          Text('备选房源')
+            .fontSize(FontSizes.PAGE_TITLE)
+            .fontColor(Colors.TEXT_PRIMARY)
+            .fontFamily(Fonts.CN)
+            .fontWeight(FontWeight.Bold)
         }
         .width('100%')
         .height(Dimensions.HEADER_HEIGHT)
@@ -354,22 +241,10 @@ export struct CandidateContent {
                     ListItem() {
                       CandidateCard({
                         property: property,
-                        isEditMode: this.isEditMode,
-                        isSelected: this.selectedIds.has(property.id),
                         onCardClick: () => {
-                          if (this.isEditMode) {
-                            this.toggleSelect(property.id);
-                          } else {
-                            const detailParam: PropertyIdParam = { propertyId: property.id, mode: '' };
-                            this.navPathStack.pushPathByName('PropertyDetail', detailParam);
-                          }
-                        },
-                        onLongPress: () => {
-                          if (!this.isEditMode) {
-                            this.enterEditMode(property.id);
-                          }
-                        },
-                        onSelect: () => { this.toggleSelect(property.id) }
+                          const detailParam: PropertyIdParam = { propertyId: property.id, mode: '' };
+                          this.navPathStack.pushPathByName('PropertyDetail', detailParam);
+                        }
                       })
                     }
                     .swipeAction({ end: {
@@ -394,44 +269,10 @@ export struct CandidateContent {
           .edgeEffect(EdgeEffect.Spring)
           .layoutWeight(1)
         }
-
-        if (this.isEditMode) {
-          Row() {
-            Text(`已选 ${this.selectedIds.size} 项`)
-              .fontSize(FontSizes.BODY)
-              .fontColor(Colors.TEXT_SECONDARY)
-              .fontFamily(Fonts.CN)
-
-            Blank()
-
-            Button('删除所选')
-              .fontSize(FontSizes.BODY)
-              .fontColor(Colors.TEXT_WHITE)
-              .fontFamily(Fonts.CN)
-              .fontWeight(FontWeight.Medium)
-              .backgroundColor(this.selectedIds.size > 0 ? Colors.DANGER : Colors.DIVIDER_DARK)
-              .borderRadius(Radius.BUTTON)
-              .height(36)
-              .enabled(this.selectedIds.size > 0)
-              .onClick(() => {
-                this.deleteSelected();
-              })
-          }
-          .width('100%')
-          .height(60)
-          .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
-          .backgroundColor(Colors.CARD_BG)
-          .shadow({
-            radius: Shadows.TAB_BAR.radius,
-            color: 'rgba(0,0,0,0.08)',
-            offsetX: 0,
-            offsetY: -2
-          })
-        }
       }
       .layoutWeight(1)
 
-      if (!this.isEditMode && !this.isMapExpanded) {
+      if (!this.isMapExpanded) {
         Button() {
           SymbolGlyph($r('sys.symbol.plus'))
             .fontSize(24)
@@ -623,46 +464,30 @@ export struct CandidateContent {
 @ComponentV2
 struct CandidateCard {
   @Param property: PropertyInfo = new PropertyInfo();
-  @Param isEditMode: boolean = false;
-  @Param isSelected: boolean = false;
   @Param onCardClick: () => void = () => {};
-  @Param onLongPress: () => void = () => {};
-  @Param onSelect: () => void = () => {};
 
   build() {
     Row() {
-      if (this.isEditMode) {
-        Checkbox()
-          .select(this.isSelected)
-          .shape(CheckBoxShape.CIRCLE)
-          .width(24)
-          .height(24)
-          .margin({ right: 12 })
-          .onChange((checked: boolean) => {
-            this.onSelect();
-          })
-      }
-
       Column() {
         Row() {
-            if (this.property.getFirstImage().length > 0) {
-             Image(this.property.getFirstImage())
-               .width(48)
-               .height(48)
-               .objectFit(ImageFit.Cover)
-               .borderRadius(24)
-           } else {
-             Row() {
-               SymbolGlyph($r('sys.symbol.house'))
-                 .fontSize(22)
-                 .fontColor([Colors.WARNING])
-             }
-             .width(48)
-             .height(48)
-             .backgroundColor(Colors.WARNING_LIGHT)
-             .borderRadius(Radius.ICON_BG)
-             .justifyContent(FlexAlign.Center)
-           }
+          if (this.property.getFirstImage().length > 0) {
+            Image(this.property.getFirstImage())
+              .width(48)
+              .height(48)
+              .objectFit(ImageFit.Cover)
+              .borderRadius(24)
+          } else {
+            Row() {
+              SymbolGlyph($r('sys.symbol.house'))
+                .fontSize(22)
+                .fontColor([Colors.WARNING])
+            }
+            .width(48)
+            .height(48)
+            .backgroundColor(Colors.WARNING_LIGHT)
+            .borderRadius(Radius.ICON_BG)
+            .justifyContent(FlexAlign.Center)
+          }
 
           Column() {
             Text(this.property.name)
@@ -739,11 +564,5 @@ struct CandidateCard {
     .onClick(() => {
       this.onCardClick();
     })
-    .gesture(
-      LongPressGesture({ repeat: false })
-        .onAction(() => {
-          this.onLongPress();
-        })
-    )
   }
 }

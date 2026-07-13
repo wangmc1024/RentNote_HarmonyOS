@@ -2,15 +2,15 @@
   "string": [
     {
       "name": "module_desc",
-      "value": "租房台账 - 华为鸿蒙租房记录元服务"
+      "value": "小寓台账 - 华为鸿蒙租房记录元服务"
     },
     {
       "name": "EntryAbility_desc",
-      "value": "租房台账主入口"
+      "value": "小寓台账主入口"
     },
     {
       "name": "EntryAbility_label",
-      "value": "租房台账"
+      "value": "小寓台账"
     },
     {
       "name": "route_AddProperty",
@@ -34,7 +34,7 @@
     },
     {
       "name": "EntryFormAbility_label",
-      "value": "租房台账卡片"
+      "value": "小寓台账卡片"
     },
     {
       "name": "EntryFormAbility_desc",

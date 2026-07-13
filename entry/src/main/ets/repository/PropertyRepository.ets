@@ -3,6 +3,10 @@ import { util } from '@kit.ArkTS';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { PropertyInfo, PropertyDTO, StatisticsOverview, UserProfileDTO, UserProfile } from '../model/PropertyModel';
 import EntryFormAbility from '../widget/EntryFormAbility';
+import { ReminderService } from '../service/ReminderService';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const TAG: string = 'PropertyRepo';
 
 const PREFS_NAME: string = 'RentNotePrefs';
 const KEY_PROPERTIES: string = 'properties';
@@ -179,6 +183,10 @@ export class PropertyRepository {
     }
   }
 
+  private refreshReminders(): void {
+    ReminderService.getInstance().markPending();
+  }
+
   async reloadData(): Promise<void> {
     await this.ensureInit();
     this.loadFromPrefs();
@@ -195,6 +203,7 @@ export class PropertyRepository {
     this.properties = [...this.properties, property];
     await this.saveToPrefs();
     this.notifyWidgetUpdate();
+    this.refreshReminders();
   }
 
   async updateProperty(property: PropertyInfo): Promise<void> {
@@ -220,6 +229,7 @@ export class PropertyRepository {
       this.properties = newList;
       await this.saveToPrefs();
       this.notifyWidgetUpdate();
+      this.refreshReminders();
     }
   }
 
@@ -231,6 +241,7 @@ export class PropertyRepository {
     this.properties = this.properties.filter((item: PropertyInfo) => item.id !== id);
     await this.saveToPrefs();
     this.notifyWidgetUpdate();
+    this.refreshReminders();
   }
 
   getCandidates(): PropertyInfo[] {
@@ -244,9 +255,11 @@ export class PropertyRepository {
   }
 
   async promoteCandidate(id: string): Promise<void> {
+    hilog.info(0, TAG, 'promoteCandidate: id=' + id + ' total=' + this.properties.length);
     const newList: PropertyInfo[] = [...this.properties];
     for (let i: number = 0; i < newList.length; i++) {
       if (newList[i].status === 'renting' || newList[i].status === 'expiring') {
+        hilog.info(0, TAG, 'promoteCandidate: demoting existing renting id=' + newList[i].id);
         const demoted: PropertyInfo = newList[i].clone();
         demoted.status = 'candidate';
         demoted.startDate = '';
@@ -256,14 +269,19 @@ export class PropertyRepository {
       }
     }
     const index: number = newList.findIndex((item: PropertyInfo) => item.id === id);
+    hilog.info(0, TAG, 'promoteCandidate: findIndex=' + index);
     if (index >= 0) {
       const promoted: PropertyInfo = newList[index].clone();
       promoted.status = 'renting';
       newList[index] = promoted;
+      hilog.info(0, TAG, 'promoteCandidate: promoted id=' + id + ' status=' + newList[index].status);
+    } else {
+      hilog.error(0, TAG, 'promoteCandidate: id not found in list!');
     }
     this.properties = newList;
     await this.saveToPrefs();
     this.notifyWidgetUpdate();
+    this.refreshReminders();
   }
 
   async demoteRenting(id: string): Promise<void> {
@@ -283,6 +301,21 @@ export class PropertyRepository {
       this.properties = newList;
       await this.saveToPrefs();
       this.notifyWidgetUpdate();
+      this.refreshReminders();
+    }
+  }
+
+  async updateBillsPaid(id: string, billsPaid: number): Promise<void> {
+    const index: number = this.properties.findIndex((item: PropertyInfo) => item.id === id);
+    if (index >= 0) {
+      const newList: PropertyInfo[] = [...this.properties];
+      const updated: PropertyInfo = newList[index].clone();
+      updated.billsPaid = billsPaid;
+      newList[index] = updated;
+      this.properties = newList;
+      await this.saveToPrefs();
+      this.notifyWidgetUpdate();
+      this.refreshReminders();
     }
   }
 
@@ -296,6 +329,7 @@ export class PropertyRepository {
     this.properties = this.properties.filter((item: PropertyInfo) => !ids.includes(item.id));
     await this.saveToPrefs();
     this.notifyWidgetUpdate();
+    this.refreshReminders();
   }
 
   async clearAll(): Promise<void> {
@@ -306,6 +340,7 @@ export class PropertyRepository {
     this.safePutSync(KEY_USER_PROFILE, '');
     await this.saveToPrefs();
     this.notifyWidgetUpdate();
+    this.refreshReminders();
   }
 
   getStatisticsOverview(): StatisticsOverview {
