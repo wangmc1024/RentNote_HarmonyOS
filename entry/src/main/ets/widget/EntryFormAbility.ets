@@ -1,7 +1,43 @@
 import { FormExtensionAbility, formBindingData, formInfo, formProvider } from '@kit.FormKit';
 import { Want } from '@kit.AbilityKit';
 import { PropertyRepository } from '../repository/PropertyRepository';
+import { PropertyInfo } from '../model/PropertyModel';
 import { preferences } from '@kit.ArkData';
+
+class ExpiryInfo {
+  propertyName: string = '';
+  endDate: string = '';
+  diffDays: number = 0;
+}
+
+class RentWidgetCountdownHelper {
+  static getNearestExpiry(properties: PropertyInfo[], now: Date): ExpiryInfo | null {
+    let nearest: ExpiryInfo | null = null;
+    for (let i: number = 0; i < properties.length; i++) {
+      const item: PropertyInfo = properties[i];
+      if (item.status !== 'renting' && item.status !== 'expiring') {
+        continue;
+      }
+      if (!item.endDate || item.endDate.length === 0) {
+        continue;
+      }
+      const parts: string[] = item.endDate.split('.');
+      if (parts.length !== 3) {
+        continue;
+      }
+      const expiry: Date = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      const diff: number = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      if (nearest === null || diff < nearest.diffDays) {
+        const info: ExpiryInfo = new ExpiryInfo();
+        info.propertyName = item.name;
+        info.endDate = item.endDate;
+        info.diffDays = diff;
+        nearest = info;
+      }
+    }
+    return nearest;
+  }
+}
 
 const FORM_PREFS_NAME: string = 'RentNoteFormPrefs';
 const KEY_FORM_IDS: string = 'active_form_ids';
@@ -33,31 +69,51 @@ export default class EntryFormAbility extends FormExtensionAbility {
   static buildWidgetFormData(): Record<string, Object> {
     const repo: PropertyRepository = PropertyRepository.getInstance();
     const overview = repo.getStatisticsOverview();
-    const expiring = repo.getExpiringProperties(30);
     const renting = repo.getRentingProperties();
     const totalRent: number = overview.monthlyAvgRent * overview.rentingCount;
-    const nextExpiry: string = expiring.length > 0 ? expiring[0].endDate : '';
-    const propertyName: string = renting.length > 0 ? renting[0].name : '';
+
+    const now: Date = new Date();
+    now.setHours(0, 0, 0, 0);
+    const nearest: ExpiryInfo | null = RentWidgetCountdownHelper.getNearestExpiry(renting, now);
+
+    const hasRenting: boolean = renting.length > 0;
+
+    let expiryLabel: string = '暂无到期';
     let countdownDays: string = '';
-    if (nextExpiry.length > 0) {
-      const parts: string[] = nextExpiry.split('.');
-      if (parts.length === 3) {
-        const expiry: Date = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-        const now: Date = new Date();
-        now.setHours(0, 0, 0, 0);
-        const diff: number = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        if (diff >= 0) {
-          countdownDays = diff.toString();
-        }
+    let expiryColor: string = '#9CA3AF';
+    let propertyName: string = hasRenting ? renting[0].name : '';
+    let hasExpiry: string = 'false';
+
+    if (nearest !== null) {
+      propertyName = nearest.propertyName;
+      countdownDays = Math.abs(nearest.diffDays).toString();
+      hasExpiry = 'true';
+      if (nearest.diffDays < 0) {
+        expiryLabel = '已过期';
+        expiryColor = '#EF4444';
+      } else if (nearest.diffDays === 0) {
+        expiryLabel = '今天到期';
+        expiryColor = '#EF4444';
+      } else if (nearest.diffDays <= 7) {
+        expiryLabel = '即将到期';
+        expiryColor = '#F59E0B';
+      } else if (nearest.diffDays <= 30) {
+        expiryLabel = '天后到期';
+        expiryColor = '#F59E0B';
+      } else {
+        expiryLabel = '天后到期';
+        expiryColor = '#10B981';
       }
     }
+
     return {
       'totalRent': totalRent > 0 ? '¥' + totalRent.toLocaleString() : '暂无',
       'rentLabel': overview.rentingCount > 0 ? '本月租金（' + overview.rentingCount + '套）' : '本月租金',
       'propertyName': propertyName,
-      'nextExpiry': nextExpiry !== '' ? nextExpiry + ' 到期' : '暂无到期',
-      'expiryColor': expiring.length > 0 ? '#F59E0B' : '#9CA3AF',
-      'countdownDays': countdownDays
+      'expiryLabel': expiryLabel,
+      'expiryColor': expiryColor,
+      'countdownDays': countdownDays,
+      'hasExpiry': hasExpiry ? 'true' : 'false'
     };
   }
 

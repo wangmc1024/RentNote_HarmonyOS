@@ -22,8 +22,8 @@ export struct CandidateContent {
   private markerPropertyIds: string[] = [];
 
   @Monitor('refreshFlag')
-  async onRefreshFlagChange(): Promise<void> {
-    await this.viewModel.loadData();
+  onRefreshFlagChange(): void {
+    this.viewModel.refreshFromRepository();
     this.updateMarkers();
   }
 
@@ -252,7 +252,7 @@ export struct CandidateContent {
                         this.candidateSwipeAction(property.id)
                       }
                     } })
-                  }, (item: PropertyInfo) => item.id + '_' + item.imageUrls.length + '_' + item.notes.length)
+                  }, (item: PropertyInfo) => item.id + '_' + item.monthlyRent + '_' + item.deposit + '_' + item.imageUrls.length + '_' + item.notes.length + '_' + item.tags.length)
                 }
                 .width('100%')
                 .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
@@ -519,23 +519,58 @@ struct CandidateCard {
         .width('100%')
         .alignItems(VerticalAlign.Top)
 
-        if (this.property.tags.length > 0) {
-          Flex({ wrap: FlexWrap.Wrap }) {
-            ForEach(this.property.tags, (tag: string) => {
-              Text(tag)
-                .fontSize(FontSizes.CAPTION)
-                .fontColor(getTagTextColor(tag))
-                .fontFamily(Fonts.CN)
-                .fontWeight(FontWeight.Medium)
-                .padding({ left: 8, right: 8, top: 3, bottom: 3 })
-                .backgroundColor(getTagBgColor(tag))
-                .borderRadius(Radius.TAG)
-                .margin({ right: 6, top: 4 })
-            }, (item: string) => item)
+        Row() {
+          if (this.property.tags.length > 0) {
+            Flex({ wrap: FlexWrap.Wrap, alignItems: ItemAlign.Center }) {
+              ForEach(this.property.tags, (tag: string) => {
+                Text(tag)
+                  .fontSize(FontSizes.CAPTION)
+                  .fontColor(getTagTextColor(tag))
+                  .fontFamily(Fonts.CN)
+                  .fontWeight(FontWeight.Medium)
+                  .padding({ left: 8, right: 8, top: 3, bottom: 3 })
+                  .backgroundColor(getTagBgColor(tag))
+                  .borderRadius(Radius.TAG)
+                  .margin({ right: 6, top: 4, bottom: 4 })
+              }, (item: string) => item)
+            }
+            .layoutWeight(1)
+          } else {
+            Blank()
+              .layoutWeight(1)
           }
-          .width('100%')
-          .margin({ top: 10 })
+
+          if (this.property.monthlyRent > 0) {
+            Column() {
+              Row() {
+                Text('¥' + this.property.monthlyRent.toLocaleString())
+                  .fontSize(FontSizes.BODY_LARGE)
+                  .fontColor(Colors.PRIMARY)
+                  .fontFamily(Fonts.NUMBER)
+                  .fontWeight(FontWeight.Bold)
+
+                Text('/月')
+                  .fontSize(FontSizes.CAPTION)
+                  .fontColor(Colors.TEXT_MUTED)
+                  .fontFamily(Fonts.CN)
+                  .margin({ left: 2 })
+              }
+
+              if (this.property.deposit > 0) {
+                Text('押金 ¥' + this.property.deposit.toLocaleString())
+                  .fontSize(FontSizes.CAPTION)
+                  .fontColor(Colors.TEXT_SECONDARY)
+                  .fontFamily(Fonts.NUMBER)
+                  .margin({ top: 2 })
+              }
+            }
+            .alignItems(HorizontalAlign.End)
+            .margin({ left: 8 })
+          }
         }
+        .width('100%')
+        .margin({ top: 10 })
+        .alignItems(VerticalAlign.Center)
 
         if (this.property.notes.length > 0) {
           Text(this.property.notes)

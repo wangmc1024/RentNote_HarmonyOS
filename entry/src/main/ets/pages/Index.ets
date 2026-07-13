@@ -5,7 +5,7 @@ import { MyContent } from './MyContent';
 import { PropertyRepository } from '../repository/PropertyRepository';
 import { PropertyIdParam, WidgetNavigateState } from '../model/PropertyModel';
 import { AppStorageV2 } from '@kit.ArkUI';
-import { ReminderService, ReminderState } from '../service/ReminderService';
+// import { ReminderService, ReminderState } from '../service/ReminderService';
 
 @Entry
 @ComponentV2
@@ -14,7 +14,7 @@ struct Index {
   @Provider('refreshFlag') refreshFlag: number = 0;
   @Local currentTab: number = 1;
   @Local widgetState: WidgetNavigateState = AppStorageV2.connect(WidgetNavigateState, 'widgetNav', () => new WidgetNavigateState())!;
-  @Local reminderState: ReminderState = AppStorageV2.connect(ReminderState, 'reminderState', () => new ReminderState())!;
+  // @Local reminderState: ReminderState = AppStorageV2.connect(ReminderState, 'reminderState', () => new ReminderState())!;
 
   private repository: PropertyRepository = PropertyRepository.getInstance();
 
@@ -27,16 +27,20 @@ struct Index {
         }
       }
     });
-    ReminderService.getInstance().checkAndNotify();
+    this.repository.checkAndResetBillsPaidMonthly();
   }
 
-  @Monitor('reminderState.pendingNotify')
-  onReminderPending(): void {
-    if (this.reminderState.pendingNotify) {
-      this.reminderState.pendingNotify = false;
-      ReminderService.getInstance().checkAndNotify();
-    }
+  onPageShow(): void {
+    this.refreshFlag++;
   }
+
+  // @Monitor('reminderState.pendingNotify')
+  // onReminderPending(): void {
+  //   if (this.reminderState.pendingNotify) {
+  //     this.reminderState.pendingNotify = false;
+  //     ReminderService.getInstance().checkAndNotify();
+  //   }
+  // }
 
   @Monitor('widgetState.action')
   onWidgetActionChange(): void {
@@ -73,6 +77,7 @@ struct Index {
       .margin({ bottom: Dimensions.TAB_PILL_MARGIN })
       .onChange((index: number) => {
         this.currentTab = index;
+        this.refreshFlag++;
       })
     }
     .hideToolBar(true)

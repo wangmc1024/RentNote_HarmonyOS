@@ -162,6 +162,7 @@ export class PropertyRepository {
       p.renewalStatus = (raw['renewalStatus'] as string) ?? '';
       p.latitude = (raw['latitude'] as number) ?? 0;
       p.longitude = (raw['longitude'] as number) ?? 0;
+      p.lastBillsResetMonth = (raw['lastBillsResetMonth'] as string) ?? '';
       list.push(p);
     }
     this.properties = list;
@@ -311,7 +312,36 @@ export class PropertyRepository {
       const newList: PropertyInfo[] = [...this.properties];
       const updated: PropertyInfo = newList[index].clone();
       updated.billsPaid = billsPaid;
+      if (billsPaid > 0) {
+        const now: Date = new Date();
+        updated.lastBillsResetMonth = now.getFullYear().toString() + '.' + (now.getMonth() + 1).toString().padStart(2, '0');
+      }
       newList[index] = updated;
+      this.properties = newList;
+      await this.saveToPrefs();
+      this.notifyWidgetUpdate();
+      this.refreshReminders();
+    }
+  }
+
+  async checkAndResetBillsPaidMonthly(): Promise<void> {
+    const now: Date = new Date();
+    const currentMonth: string = now.getFullYear().toString() + '.' + (now.getMonth() + 1).toString().padStart(2, '0');
+    let needSave: boolean = false;
+    const newList: PropertyInfo[] = [...this.properties];
+    for (let i: number = 0; i < newList.length; i++) {
+      const p: PropertyInfo = newList[i];
+      if (p.status === 'renting' || p.status === 'expiring') {
+        if (p.lastBillsResetMonth !== currentMonth) {
+          const updated: PropertyInfo = p.clone();
+          updated.billsPaid = 0;
+          updated.lastBillsResetMonth = currentMonth;
+          newList[i] = updated;
+          needSave = true;
+        }
+      }
+    }
+    if (needSave) {
       this.properties = newList;
       await this.saveToPrefs();
       this.notifyWidgetUpdate();
@@ -449,6 +479,7 @@ export class PropertyRepository {
         p.renewalStatus = (raw['renewalStatus'] as string) ?? '';
         p.latitude = (raw['latitude'] as number) ?? 0;
         p.longitude = (raw['longitude'] as number) ?? 0;
+        p.lastBillsResetMonth = (raw['lastBillsResetMonth'] as string) ?? '';
         if (p.status === 'renting' || p.status === 'expiring') {
           hasRentingImport = true;
         }

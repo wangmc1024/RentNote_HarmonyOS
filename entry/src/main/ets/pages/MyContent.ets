@@ -52,6 +52,21 @@ export struct MyContent {
     });
   }
 
+  private addWidgetToDesktop(): void {
+    // requestPublishForm 需要 API 18+，当前 SDK 不支持，直接引导手动添加
+    this.showManualAddGuide();
+  }
+
+  private showManualAddGuide(): void {
+    this.getUIContext().showAlertDialog({
+      message: '请在桌面长按空白处，选择"服务卡片"，找到"小寓台账"添加到桌面。添加后可实时查看租金和到期倒计时。',
+      primaryButton: {
+        value: '知道了',
+        action: () => {}
+      }
+    });
+  }
+
   build() {
     Scroll() {
       Column() {
@@ -132,11 +147,19 @@ export struct MyContent {
         })
 
         Column() {
+          // 通知设置（atomicservice 不支持本地通知，已注释）
+          // MenuItemRow({
+          //   iconName: 'sys.symbol.bell',
+          //   label: '通知设置',
+          //   onAction: () => {
+          //     this.navPathStack.pushPathByName('Notification', null);
+          //   }
+          // })
           MenuItemRow({
-            iconName: 'sys.symbol.bell',
-            label: '通知设置',
+            iconName: 'sys.symbol.widget',
+            label: '添加桌面小组件',
             onAction: () => {
-              this.navPathStack.pushPathByName('Notification', null);
+              this.addWidgetToDesktop();
             }
           })
         }

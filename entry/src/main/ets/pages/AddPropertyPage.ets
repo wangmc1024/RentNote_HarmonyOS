@@ -181,7 +181,18 @@ export struct AddPropertyPage {
     property.startDate = this.startDate;
     property.endDate = this.endDate;
     property.status = this.viewModel.isCandidateMode ? 'candidate' : 'renting';
-    property.billsPaid = 0;
+    if (this.viewModel.isEditMode && this.viewModel.editPropertyId) {
+      const existing: PropertyInfo | undefined = this.viewModel.loadProperty();
+      if (existing) {
+        property.billsPaid = existing.billsPaid;
+        property.lastBillsResetMonth = existing.lastBillsResetMonth;
+        property.status = existing.status;
+      } else {
+        property.billsPaid = 0;
+      }
+    } else {
+      property.billsPaid = 0;
+    }
     property.imageUrls = [...this.imageUris];
     property.notes = this.notes;
     property.renewalStatus = this.renewalStatus;
@@ -190,6 +201,7 @@ export struct AddPropertyPage {
 
     this.viewModel.saveProperty(property).then((success: boolean) => {
       if (success) {
+        this.refreshFlag++;
         this.getUIContext().getPromptAction().showToast({
           message: '保存成功',
           duration: 2000
@@ -401,6 +413,7 @@ export struct AddPropertyPage {
                 .fontColor(Colors.TEXT_PRIMARY)
                 .fontFamily(Fonts.CN)
                 .placeholderColor(Colors.TEXT_MUTED)
+                .type(InputType.Number)
                 .onChange((v: string) => { this.monthlyRent = v })
             }
 
@@ -422,6 +435,7 @@ export struct AddPropertyPage {
                 .fontColor(Colors.TEXT_PRIMARY)
                 .fontFamily(Fonts.CN)
                 .placeholderColor(Colors.TEXT_MUTED)
+                .type(InputType.Number)
                 .onChange((v: string) => { this.deposit = v })
             }
 

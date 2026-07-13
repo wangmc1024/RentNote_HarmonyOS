@@ -23,6 +23,7 @@ export class PropertyInfo {
   @Trace renewalStatus: string = '';
   @Trace latitude: number = 0;
   @Trace longitude: number = 0;
+  @Trace lastBillsResetMonth: string = '';
 
   getFirstImage(): string {
     return this.imageUrls.length > 0 ? this.imageUrls[0] : '';
@@ -46,6 +47,7 @@ export class PropertyInfo {
     p.renewalStatus = this.renewalStatus;
     p.latitude = this.latitude;
     p.longitude = this.longitude;
+    p.lastBillsResetMonth = this.lastBillsResetMonth;
     return p;
   }
 
@@ -67,6 +69,7 @@ export class PropertyInfo {
     dto.renewalStatus = this.renewalStatus;
     dto.latitude = this.latitude;
     dto.longitude = this.longitude;
+    dto.lastBillsResetMonth = this.lastBillsResetMonth;
     return dto;
   }
 }
@@ -88,6 +91,7 @@ export class PropertyDTO {
   renewalStatus: string = '';
   latitude: number = 0;
   longitude: number = 0;
+  lastBillsResetMonth: string = '';
 }
 @ObservedV2
 export class StatisticsOverview {

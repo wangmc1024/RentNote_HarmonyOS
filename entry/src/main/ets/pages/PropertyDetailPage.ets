@@ -29,16 +29,24 @@ export struct PropertyDetailPage {
   @Monitor('refreshFlag')
   onRefreshFlagChange(): void {
     if (this.propertyId.length > 0) {
-      this.viewModel.loadProperty(this.propertyId).then(() => {
-        this.refreshMapMarker();
-      });
+      this.viewModel.refreshProperty(this.propertyId);
     }
+  }
+
+  @Monitor('viewModel.propertyVersion')
+  onPropertyVersionChange(): void {
+    this.refreshMapMarker();
   }
 
   private mapOptions?: mapCommon.MapOptions;
   private mapCallback?: AsyncCallback<map.MapComponentController>;
   private mapController?: map.MapComponentController;
   private detailMarker?: map.Marker;
+  private listScroller: ListScroller = new ListScroller();
+
+  private get currentProperty(): PropertyInfo {
+    return this.viewModel.property as PropertyInfo;
+  }
 
   aboutToAppear(): void {
     this.mapOptions = {
@@ -108,7 +116,7 @@ export struct PropertyDetailPage {
           })
 
           if (this.viewModel.property) {
-            this.ContentArea(this.viewModel.property as PropertyInfo)
+            this.ContentArea()
           }
         }
         .width('100%')
@@ -116,7 +124,7 @@ export struct PropertyDetailPage {
         .backgroundColor(Colors.BG_PRIMARY)
 
         if (this.previewIndex >= 0 && this.viewModel.property) {
-          this.ImagePreviewOverlay(this.viewModel.property as PropertyInfo)
+          this.ImagePreviewOverlay()
         }
       }
       .width('100%')
@@ -131,14 +139,20 @@ export struct PropertyDetailPage {
         });
       }
     })
+    .onShown(() => {
+      if (this.propertyId.length > 0) {
+        this.viewModel.refreshProperty(this.propertyId);
+        this.refreshMapMarker();
+      }
+    })
     .hideTitleBar(true)
   }
 
   @Builder
-  ImagePreviewOverlay(property: PropertyInfo) {
+  ImagePreviewOverlay() {
     Column() {
       Row() {
-        Text((this.previewIndex + 1).toString() + ' / ' + property.imageUrls.length.toString())
+        Text((this.previewIndex + 1).toString() + ' / ' + this.currentProperty.imageUrls.length.toString())
           .fontSize(FontSizes.BODY)
           .fontColor(Colors.TEXT_WHITE)
           .fontFamily(Fonts.NUMBER)
@@ -161,7 +175,7 @@ export struct PropertyDetailPage {
       .padding({ left: 16, right: 16, top: 48 })
 
       Swiper() {
-        ForEach(property.imageUrls, (uri: string, index: number) => {
+        ForEach(this.currentProperty.imageUrls, (uri: string, index: number) => {
           Image(uri)
             .width('100%')
             .objectFit(ImageFit.Contain)
@@ -182,19 +196,19 @@ export struct PropertyDetailPage {
   }
 
   @Builder
-  ContentArea(property: PropertyInfo) {
+  ContentArea() {
     Scroll() {
       Column() {
         // ===== 标题区域 =====
         Column() {
-          Text(property.name)
+          Text(this.currentProperty.name)
             .fontSize(FontSizes.TITLE)
             .fontColor(Colors.TEXT_PRIMARY)
             .fontFamily(Fonts.CN)
             .fontWeight(FontWeight.Bold)
             .alignSelf(ItemAlign.Start)
 
-          Text(property.address)
+          Text(this.currentProperty.address)
             .fontSize(FontSizes.BODY)
             .fontColor(Colors.TEXT_SECONDARY)
             .fontFamily(Fonts.CN)
@@ -203,7 +217,7 @@ export struct PropertyDetailPage {
 
           // 标签
           Row() {
-            ForEach(property.tags, (tag: string) => {
+            ForEach(this.currentProperty.tags, (tag: string) => {
               Text(tag)
                 .fontSize(FontSizes.CAPTION)
                 .fontColor(getTagTextColor(tag))
@@ -221,9 +235,9 @@ export struct PropertyDetailPage {
         .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
         .margin({ top: 12 })
 
-        if (property.imageUrls.length > 0) {
+        if (this.currentProperty.imageUrls.length > 0) {
           Flex({ wrap: FlexWrap.Wrap }) {
-            ForEach(property.imageUrls, (uri: string, index: number) => {
+            ForEach(this.currentProperty.imageUrls, (uri: string, index: number) => {
               Image(uri)
                 .width(105)
                 .height(105)
@@ -241,7 +255,7 @@ export struct PropertyDetailPage {
         }
 
         // ===== 地图卡片 =====
-        if (property.latitude !== 0 && property.longitude !== 0) {
+        if (this.currentProperty.latitude !== 0 && this.currentProperty.longitude !== 0) {
           Column() {
             MapComponent({ mapOptions: this.mapOptions, mapCallback: this.mapCallback })
               .width('100%')
@@ -283,16 +297,15 @@ export struct PropertyDetailPage {
 
           Row() {
             Column() {
-              this.LeaseItem('月租金', '¥' + property.monthlyRent.toLocaleString(), Colors.PRIMARY)
-              this.LeaseItem('押金', '¥' + property.deposit.toLocaleString(), Colors.TEXT_PRIMARY)
+              this.RentItem()
+              this.DepositItem()
             }
             .layoutWeight(1)
             .margin({ left: Spacing.CARD_PADDING })
 
             Column() {
-              this.LeaseItem('入住时间', property.startDate, Colors.TEXT_PRIMARY)
-              this.LeaseItem('到期时间', property.endDate,
-                property.status === 'expiring' ? Colors.WARNING : Colors.TEXT_PRIMARY)
+              this.StartDateItem()
+              this.EndDateItem()
             }
             .layoutWeight(1)
           }
@@ -311,8 +324,8 @@ export struct PropertyDetailPage {
         .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
 
         // ===== 账单卡片 =====
-        if (property.status !== 'candidate') {
-          List() {
+        if (this.currentProperty.status !== 'candidate') {
+          List({ scroller: this.listScroller }) {
             ListItem() {
               Row() {
                 Column() {
@@ -321,7 +334,7 @@ export struct PropertyDetailPage {
                     .fontColor(Colors.TEXT_SECONDARY)
                     .fontFamily(Fonts.CN)
 
-                  Text('¥' + property.monthlyRent.toLocaleString())
+                  Text('¥' + this.currentProperty.monthlyRent.toLocaleString())
                     .fontSize(FontSizes.TITLE)
                     .fontColor(Colors.TEXT_PRIMARY)
                     .fontFamily(Fonts.NUMBER)
@@ -331,13 +344,13 @@ export struct PropertyDetailPage {
 
                 Blank()
 
-                Text(property.billsPaid > 0 ? '已缴纳' : '待缴纳')
+                Text(this.currentProperty.billsPaid > 0 ? '已缴纳' : '待缴纳')
                   .fontSize(FontSizes.BODY_SMALL)
-                  .fontColor(property.billsPaid > 0 ? Colors.SUCCESS : Colors.WARNING)
+                  .fontColor(this.currentProperty.billsPaid > 0 ? Colors.SUCCESS : Colors.WARNING)
                   .fontFamily(Fonts.CN)
                   .fontWeight(FontWeight.Medium)
                   .padding({ left: 12, right: 12, top: 6, bottom: 6 })
-                  .backgroundColor(property.billsPaid > 0 ? Colors.SUCCESS_LIGHT : Colors.WARNING_LIGHT)
+                  .backgroundColor(this.currentProperty.billsPaid > 0 ? Colors.SUCCESS_LIGHT : Colors.WARNING_LIGHT)
                   .borderRadius(Radius.CARD)
               }
               .width('100%')
@@ -352,16 +365,15 @@ export struct PropertyDetailPage {
                 offsetY: Shadows.CARD.offsetY
               })
             }
-            .swipeAction({ end: this.BillSwipeAction(property) })
+            .swipeAction({ end: this.BillSwipeAction() })
           }
           .scrollBar(BarState.Off)
           .width('100%')
-          .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
-          .margin({ top: Spacing.ITEM_GAP })
+          .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
         }
 
         // ===== 备注卡片 =====
-        if (property.notes.length > 0) {
+        if (this.currentProperty.notes.length > 0) {
           Column() {
             Text('备注')
               .fontSize(FontSizes.SECTION_TITLE)
@@ -370,7 +382,7 @@ export struct PropertyDetailPage {
               .fontWeight(FontWeight.Bold)
               .alignSelf(ItemAlign.Start)
 
-            Text(property.notes)
+            Text(this.currentProperty.notes)
               .fontSize(FontSizes.BODY_SMALL)
               .fontColor(Colors.TEXT_SECONDARY)
               .fontFamily(Fonts.CN)
@@ -403,7 +415,7 @@ export struct PropertyDetailPage {
             .backgroundColor(Colors.PRIMARY)
             .borderRadius(Radius.BUTTON)
             .onClick(() => {
-              const editParam: PropertyIdParam = { propertyId: property.id, mode: '' };
+              const editParam: PropertyIdParam = { propertyId: this.currentProperty.id, mode: '' };
               this.navPathStack.pushPathByName('AddProperty', editParam);
             })
 
@@ -420,7 +432,7 @@ export struct PropertyDetailPage {
             .borderRadius(Radius.BUTTON)
             .border({ width: 1, color: Colors.DANGER_BORDER })
             .onClick(() => {
-              this.showDeleteDialog(property.id);
+              this.showDeleteDialog(this.currentProperty.id);
             })
         }
         .width('100%')
@@ -468,55 +480,124 @@ export struct PropertyDetailPage {
   }
 
   @Builder
-  BillSwipeAction(property: PropertyInfo) {
+  BillSwipeAction() {
     Row() {
       Button('已缴纳')
         .fontSize(FontSizes.BODY)
-        .fontColor(property.billsPaid > 0 ? Colors.TEXT_WHITE : Colors.SUCCESS)
+        .fontColor(this.viewModel.property!.billsPaid > 0 ? Colors.TEXT_WHITE : Colors.SUCCESS)
         .fontFamily(Fonts.CN)
         .fontWeight(FontWeight.Medium)
-        .backgroundColor(property.billsPaid > 0 ? Colors.SUCCESS : Colors.SUCCESS_LIGHT)
+        .backgroundColor(this.viewModel.property!.billsPaid > 0 ? Colors.SUCCESS : Colors.SUCCESS_LIGHT)
         .borderRadius(0)
         .height('100%')
         .width(80)
         .onClick(() => {
-          if (property.billsPaid <= 0) {
-            this.viewModel.updateBillsPaid(property.id, 1).then(() => {
+          if (this.viewModel.property!.billsPaid <= 0) {
+            this.viewModel.updateBillsPaid(this.viewModel.property!.id, 1).then(() => {
+              this.listScroller.closeAllSwipeActions();
               this.refreshFlag++;
             });
+          } else {
+            this.listScroller.closeAllSwipeActions();
           }
         })
 
       Button('未缴纳')
         .fontSize(FontSizes.BODY)
-        .fontColor(property.billsPaid > 0 ? Colors.WARNING : Colors.TEXT_WHITE)
+        .fontColor(this.viewModel.property!.billsPaid > 0 ? Colors.WARNING : Colors.TEXT_WHITE)
         .fontFamily(Fonts.CN)
         .fontWeight(FontWeight.Medium)
-        .backgroundColor(property.billsPaid > 0 ? Colors.WARNING_LIGHT : Colors.WARNING)
+        .backgroundColor(this.viewModel.property!.billsPaid > 0 ? Colors.WARNING_LIGHT : Colors.WARNING)
         .borderRadius(0)
         .height('100%')
         .width(80)
         .onClick(() => {
-          if (property.billsPaid > 0) {
-            this.viewModel.updateBillsPaid(property.id, 0).then(() => {
+          if (this.viewModel.property!.billsPaid > 0) {
+            this.viewModel.updateBillsPaid(this.viewModel.property!.id, 0).then(() => {
+              this.listScroller.closeAllSwipeActions();
               this.refreshFlag++;
             });
+          } else {
+            this.listScroller.closeAllSwipeActions();
           }
         })
     }
   }
 
   @Builder
-  LeaseItem(label: string, value: string, valueColor: string) {
+  RentItem() {
     Column() {
-      Text(label)
+      Text('月租金')
         .fontSize(FontSizes.BODY_SMALL)
         .fontColor(Colors.TEXT_SECONDARY)
         .fontFamily(Fonts.CN)
 
-      Text(value)
+      Text('¥' + this.currentProperty.monthlyRent.toLocaleString())
         .fontSize(FontSizes.PAGE_TITLE)
-        .fontColor(valueColor)
+        .fontColor(Colors.PRIMARY)
+        .fontFamily(Fonts.NUMBER)
+        .fontWeight(FontWeight.Bold)
+        .margin({ top: 4 })
+    }
+    .width('100%')
+    .height(56)
+    .alignItems(HorizontalAlign.Start)
+    .justifyContent(FlexAlign.Center)
+  }
+
+  @Builder
+  DepositItem() {
+    Column() {
+      Text('押金')
+        .fontSize(FontSizes.BODY_SMALL)
+        .fontColor(Colors.TEXT_SECONDARY)
+        .fontFamily(Fonts.CN)
+
+      Text('¥' + this.currentProperty.deposit.toLocaleString())
+        .fontSize(FontSizes.PAGE_TITLE)
+        .fontColor(Colors.TEXT_PRIMARY)
+        .fontFamily(Fonts.NUMBER)
+        .fontWeight(FontWeight.Bold)
+        .margin({ top: 4 })
+    }
+    .width('100%')
+    .height(56)
+    .alignItems(HorizontalAlign.Start)
+    .justifyContent(FlexAlign.Center)
+  }
+
+  @Builder
+  StartDateItem() {
+    Column() {
+      Text('入住时间')
+        .fontSize(FontSizes.BODY_SMALL)
+        .fontColor(Colors.TEXT_SECONDARY)
+        .fontFamily(Fonts.CN)
+
+      Text(this.currentProperty.startDate)
+        .fontSize(FontSizes.PAGE_TITLE)
+        .fontColor(Colors.TEXT_PRIMARY)
+        .fontFamily(Fonts.NUMBER)
+        .fontWeight(FontWeight.Bold)
+        .margin({ top: 4 })
+    }
+    .width('100%')
+    .height(56)
+    .alignItems(HorizontalAlign.Start)
+    .justifyContent(FlexAlign.Center)
+  }
+
+  @Builder
+  EndDateItem() {
+    Column() {
+      Text('到期时间')
+        .fontSize(FontSizes.BODY_SMALL)
+        .fontColor(Colors.TEXT_SECONDARY)
+        .fontFamily(Fonts.CN)
+
+      Text(this.currentProperty.endDate)
+        .fontSize(FontSizes.PAGE_TITLE)
+        .fontColor(this.currentProperty.status === 'expiring' ? Colors.WARNING : Colors.TEXT_PRIMARY)
         .fontFamily(Fonts.NUMBER)
         .fontWeight(FontWeight.Bold)
         .margin({ top: 4 })

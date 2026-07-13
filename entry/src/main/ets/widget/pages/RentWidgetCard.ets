@@ -2,9 +2,10 @@ const storageLocal: LocalStorage = new LocalStorage();
 storageLocal.setOrCreate('totalRent', '暂无');
 storageLocal.setOrCreate('rentLabel', '本月租金');
 storageLocal.setOrCreate('propertyName', '');
-storageLocal.setOrCreate('nextExpiry', '暂无到期');
+storageLocal.setOrCreate('expiryLabel', '暂无到期');
 storageLocal.setOrCreate('expiryColor', '#9CA3AF');
 storageLocal.setOrCreate('countdownDays', '');
+storageLocal.setOrCreate('hasExpiry', 'false');
 
 @Entry(storageLocal)
 @Component
@@ -12,9 +13,10 @@ struct RentWidgetCard {
   @LocalStorageProp('totalRent') totalRent: string = '暂无';
   @LocalStorageProp('rentLabel') rentLabel: string = '本月租金';
   @LocalStorageProp('propertyName') propertyName: string = '';
-  @LocalStorageProp('nextExpiry') nextExpiry: string = '暂无到期';
+  @LocalStorageProp('expiryLabel') expiryLabel: string = '暂无到期';
   @LocalStorageProp('expiryColor') expiryColor: string = '#9CA3AF';
   @LocalStorageProp('countdownDays') countdownDays: string = '';
+  @LocalStorageProp('hasExpiry') hasExpiry: string = 'false';
 
   build() {
     Row() {
@@ -34,7 +36,6 @@ struct RentWidgetCard {
       .backgroundColor('#5046E5')
       .borderRadius({ topLeft: 16, bottomLeft: 16 })
       .justifyContent(FlexAlign.Center)
-      .margin({ left: 0 })
       .onClick(() => {
         postCardAction(this, {
           action: 'router',
@@ -78,19 +79,19 @@ struct RentWidgetCard {
       })
 
       Column() {
-        if (this.countdownDays.length > 0) {
+        if (this.hasExpiry === 'true' && this.countdownDays.length > 0) {
           Text(this.countdownDays)
             .fontSize(24)
             .fontColor(this.expiryColor)
             .fontWeight(FontWeight.Bold)
 
-          Text('天到期')
+          Text(this.expiryLabel)
             .fontSize(10)
             .fontColor(this.expiryColor)
             .margin({ top: 0 })
         } else {
-          Text(this.nextExpiry)
-            .fontSize(10)
+          Text(this.hasExpiry === 'true' ? this.expiryLabel : '暂无到期')
+            .fontSize(12)
             .fontColor(this.expiryColor)
         }
       }

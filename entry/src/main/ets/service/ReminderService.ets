@@ -1,3 +1,9 @@
+// ReminderService - atomicservice 不支持 notificationManager.publish 和 reminderAgentManager
+// 当前保留 Toast + 振动 作为前台提醒方式
+// 如需通知栏提醒，需配置 AGC 云函数 + 服务通知 REST API
+
+import { vibrator } from '@kit.SensorServiceKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 import { promptAction } from '@kit.ArkUI';
 import { PropertyInfo } from '../model/PropertyModel';
 import { PropertyRepository } from '../repository/PropertyRepository';
@@ -25,7 +31,7 @@ export class ReminderService {
     }
   }
 
-  checkAndNotify(): void {
+  async checkAndNotify(): Promise<void> {
     const repo: PropertyRepository = PropertyRepository.getInstance();
     const reminderEnabled: boolean = repo.getReminderEnabled();
     if (!reminderEnabled) {
@@ -36,6 +42,30 @@ export class ReminderService {
     if (properties.length === 0) {
       return;
     }
+
+    const vibrateEnabled: boolean = repo.getVibrateEnabled();
+
+    this.showToastFallback(properties);
+
+    if (vibrateEnabled) {
+      this.triggerVibration();
+    }
+  }
+
+  private triggerVibration(): void {
+    try {
+      vibrator.startVibration({
+        type: 'time',
+        duration: 300
+      }, {
+        usage: 'notification'
+      }).catch((_e: BusinessError) => {
+      });
+    } catch (_e) {
+    }
+  }
+
+  private showToastFallback(properties: PropertyInfo[]): void {
     const first: PropertyInfo = properties[0];
     const parts: string[] = first.endDate.split('.');
     if (parts.length !== 3) {

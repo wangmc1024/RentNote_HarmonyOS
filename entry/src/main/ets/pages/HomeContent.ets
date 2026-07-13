@@ -11,7 +11,7 @@ export struct HomeContent {
 
   @Monitor('refreshFlag')
   onRefreshFlagChange(): void {
-    this.viewModel.loadData();
+    this.viewModel.refreshFromRepository();
   }
 
   aboutToAppear(): void {
