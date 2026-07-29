@@ -132,36 +132,49 @@ export class PropertyRepository {
       this.properties = [];
       return;
     }
-    const cleaned: string = json.replace(/"__ob_/g, '"');
-    const rawList: Object[] = JSON.parse(cleaned) as Object[];
+    const cleaned: string = json.replace(new RegExp('"__ob_', 'g'), '"');
+    let rawList: Object[];
+    try {
+      rawList = JSON.parse(cleaned) as Object[];
+    } catch (_e) {
+      hilog.error(0, TAG, 'loadFromPrefs: JSON parse failed, resetting data');
+      this.properties = [];
+      this.safePutSync(KEY_PROPERTIES, '[]');
+      this.safeFlush();
+      return;
+    }
     const list: PropertyInfo[] = [];
     for (const rawObj of rawList) {
-      const raw: Record<string, Object> = rawObj as Record<string, Object>;
-      const p: PropertyInfo = new PropertyInfo();
-      p.id = (raw['id'] as string) ?? '';
-      p.name = (raw['name'] as string) ?? '';
-      p.address = (raw['address'] as string) ?? '';
-      p.district = (raw['district'] as string) ?? '';
-      p.tags = (raw['tags'] as string[]) ?? [];
-      p.monthlyRent = (raw['monthlyRent'] as number) ?? 0;
-      p.deposit = (raw['deposit'] as number) ?? 0;
-      p.startDate = (raw['startDate'] as string) ?? '';
-      p.endDate = (raw['endDate'] as string) ?? '';
-      p.status = (raw['status'] as string) ?? 'renting';
-      p.billsPaid = (raw['billsPaid'] as number) ?? 0;
-      const imageUrls: string[] = (raw['imageUrls'] as string[]) ?? [];
-      const imageUrl: string = (raw['imageUrl'] as string) ?? '';
-      if (imageUrls.length > 0) {
-        p.imageUrls = imageUrls;
-      } else if (imageUrl.length > 0) {
-        p.imageUrls = [imageUrl];
+      try {
+        const raw: Record<string, Object> = rawObj as Record<string, Object>;
+        const p: PropertyInfo = new PropertyInfo();
+        p.id = (raw['id'] as string) ?? '';
+        p.name = (raw['name'] as string) ?? '';
+        p.address = (raw['address'] as string) ?? '';
+        p.district = (raw['district'] as string) ?? '';
+        p.tags = (raw['tags'] as string[]) ?? [];
+        p.monthlyRent = (raw['monthlyRent'] as number) ?? 0;
+        p.deposit = (raw['deposit'] as number) ?? 0;
+        p.startDate = (raw['startDate'] as string) ?? '';
+        p.endDate = (raw['endDate'] as string) ?? '';
+        p.status = (raw['status'] as string) ?? 'renting';
+        p.billsPaid = (raw['billsPaid'] as number) ?? 0;
+        const imageUrls: string[] = (raw['imageUrls'] as string[]) ?? [];
+        const imageUrl: string = (raw['imageUrl'] as string) ?? '';
+        if (imageUrls.length > 0) {
+          p.imageUrls = imageUrls;
+        } else if (imageUrl.length > 0) {
+          p.imageUrls = [imageUrl];
+        }
+        p.notes = (raw['notes'] as string) ?? '';
+        p.renewalStatus = (raw['renewalStatus'] as string) ?? '';
+        p.latitude = (raw['latitude'] as number) ?? 0;
+        p.longitude = (raw['longitude'] as number) ?? 0;
+        p.lastBillsResetMonth = (raw['lastBillsResetMonth'] as string) ?? '';
+        list.push(p);
+      } catch (_e) {
+        hilog.error(0, TAG, 'loadFromPrefs: skipping corrupted entry');
       }
-      p.notes = (raw['notes'] as string) ?? '';
-      p.renewalStatus = (raw['renewalStatus'] as string) ?? '';
-      p.latitude = (raw['latitude'] as number) ?? 0;
-      p.longitude = (raw['longitude'] as number) ?? 0;
-      p.lastBillsResetMonth = (raw['lastBillsResetMonth'] as string) ?? '';
-      list.push(p);
     }
     this.properties = list;
   }
@@ -255,6 +268,12 @@ export class PropertyRepository {
 
   async promoteCandidate(id: string): Promise<void> {
     hilog.info(0, TAG, 'promoteCandidate: id=' + id + ' total=' + this.properties.length);
+    const targetIndex: number = this.properties.findIndex((item: PropertyInfo) => item.id === id);
+    hilog.info(0, TAG, 'promoteCandidate: findIndex=' + targetIndex);
+    if (targetIndex < 0) {
+      hilog.error(0, TAG, 'promoteCandidate: id not found in list!');
+      return;
+    }
     const newList: PropertyInfo[] = [...this.properties];
     for (let i: number = 0; i < newList.length; i++) {
       if (newList[i].status === 'renting' || newList[i].status === 'expiring') {
@@ -267,16 +286,10 @@ export class PropertyRepository {
         newList[i] = demoted;
       }
     }
-    const index: number = newList.findIndex((item: PropertyInfo) => item.id === id);
-    hilog.info(0, TAG, 'promoteCandidate: findIndex=' + index);
-    if (index >= 0) {
-      const promoted: PropertyInfo = newList[index].clone();
-      promoted.status = 'renting';
-      newList[index] = promoted;
-      hilog.info(0, TAG, 'promoteCandidate: promoted id=' + id + ' status=' + newList[index].status);
-    } else {
-      hilog.error(0, TAG, 'promoteCandidate: id not found in list!');
-    }
+    const promoted: PropertyInfo = newList[targetIndex].clone();
+    promoted.status = 'renting';
+    newList[targetIndex] = promoted;
+    hilog.info(0, TAG, 'promoteCandidate: promoted id=' + id + ' status=' + newList[targetIndex].status);
     this.properties = newList;
     await this.saveToPrefs();
     this.notifyWidgetUpdate();
@@ -401,7 +414,12 @@ export class PropertyRepository {
     if (json.length === 0) {
       return profile;
     }
-    const dto: UserProfileDTO = JSON.parse(json) as UserProfileDTO;
+    let dto: UserProfileDTO;
+    try {
+      dto = JSON.parse(json) as UserProfileDTO;
+    } catch (_e) {
+      return profile;
+    }
     profile.name = dto.name ?? '';
     profile.subtitle = dto.subtitle ?? '';
     profile.avatarUri = dto.avatarUri ?? '';

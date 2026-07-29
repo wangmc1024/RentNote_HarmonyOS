@@ -317,7 +317,8 @@ export struct CandidateContent {
                       CandidateCard({
                         property: property,
                         onCardClick: () => {
-                          const detailParam: PropertyIdParam = { propertyId: property.id, mode: '' };
+                          const detailParam: PropertyIdParam = new PropertyIdParam();
+                          detailParam.propertyId = property.id;
                           this.navPathStack.pushPathByName('PropertyDetail', detailParam);
                         }
                       })
@@ -327,7 +328,7 @@ export struct CandidateContent {
                         this.candidateSwipeAction(property.id)
                       }
                     } })
-                  }, (item: PropertyInfo) => item.id + '_' + item.monthlyRent + '_' + item.deposit + '_' + item.imageUrls.length + '_' + item.notes.length + '_' + item.tags.length)
+                  }, (item: PropertyInfo) => item.id)
                 }
                 .width('100%')
                 .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })

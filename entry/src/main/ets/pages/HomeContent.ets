@@ -117,6 +117,9 @@ export struct HomeContent {
   }
 
   private showDemoteDialog(): void {
+    if (this.viewModel.rentingProperties.length === 0) {
+      return;
+    }
     const property: PropertyInfo = this.viewModel.rentingProperties[0];
     this.getUIContext().showAlertDialog({
       message: '取消选定后，该房源将退回备选列表，租期信息将被清除。',
@@ -286,7 +289,7 @@ export struct HomeContent {
         ListItem() {
           this.RentingCardContent()
         }
-        .swipeAction({ end: this.SwipeDemoteBuilder() })
+        .swipeAction({ end: { builder: () => { this.SwipeDemoteBuilder() } } })
       }
       .scrollBar(BarState.Off)
       .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
@@ -434,7 +437,8 @@ export struct HomeContent {
     })
     .margin({ top: 4 })
     .onClick(() => {
-      const detailParam: PropertyIdParam = { propertyId: this.viewModel.rentingProperties[0].id, mode: '' };
+      const detailParam: PropertyIdParam = new PropertyIdParam();
+      detailParam.propertyId = this.viewModel.rentingProperties[0].id;
       this.navPathStack.pushPathByName('PropertyDetail', detailParam);
     })
   }

@@ -100,9 +100,9 @@ export class Radius {
 // ============ 尺寸系统 ============
 export class Dimensions {
   static readonly HEADER_HEIGHT: number = 56;
-  static readonly TAB_PILL_HEIGHT: number = 62;
+  static readonly TAB_PILL_HEIGHT: number = 52;
   static readonly TAB_PILL_WIDTH: number = 348;
-  static readonly TAB_PILL_MARGIN: number = 21;
+  static readonly TAB_PILL_MARGIN: number = 12;
 
   static readonly MAP_CARD_HEIGHT: number = 180;
   static readonly BILL_CARD_HEIGHT: number = 91;

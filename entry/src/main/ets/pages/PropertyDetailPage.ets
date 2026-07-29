@@ -365,7 +365,7 @@ export struct PropertyDetailPage {
                 offsetY: Shadows.CARD.offsetY
               })
             }
-            .swipeAction({ end: this.BillSwipeAction() })
+            .swipeAction({ end: { builder: () => { this.BillSwipeAction() } } })
           }
           .scrollBar(BarState.Off)
           .width('100%')
@@ -415,7 +415,8 @@ export struct PropertyDetailPage {
             .backgroundColor(Colors.PRIMARY)
             .borderRadius(Radius.BUTTON)
             .onClick(() => {
-              const editParam: PropertyIdParam = { propertyId: this.currentProperty.id, mode: '' };
+              const editParam: PropertyIdParam = new PropertyIdParam();
+              editParam.propertyId = this.currentProperty.id;
               this.navPathStack.pushPathByName('AddProperty', editParam);
             })
 

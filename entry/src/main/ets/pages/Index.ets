@@ -90,8 +90,8 @@ struct Index {
         .fontWeight(this.currentTab === index ? FontWeight.Medium : FontWeight.Normal)
         .margin({ top: 2 })
     }
-    .width(54)
-    .height(54)
+    .width(46)
+    .height(46)
     .justifyContent(FlexAlign.Center)
     .borderRadius(Radius.TAB_PILL_INNER)
     .backgroundColor(this.currentTab === index ? Colors.PRIMARY : Color.Transparent)
