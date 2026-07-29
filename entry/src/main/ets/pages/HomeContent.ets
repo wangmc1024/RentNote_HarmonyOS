@@ -177,11 +177,102 @@ export struct HomeContent {
         .fontWeight(FontWeight.Medium)
         .margin({ top: 16 })
 
-      Text('在备选中选定一套房源开始租期')
-        .fontSize(FontSizes.BODY_SMALL)
-        .fontColor(Colors.TEXT_MUTED)
-        .fontFamily(Fonts.CN)
-        .margin({ top: 8 })
+      Column({ space: 6 }) {
+        Row() {
+          Row() {
+            Text('1')
+              .fontSize(10)
+              .fontColor(Colors.PRIMARY)
+              .fontFamily(Fonts.NUMBER)
+              .fontWeight(FontWeight.Bold)
+          }
+          .width(18)
+          .height(18)
+          .backgroundColor(Colors.PRIMARY_LIGHT)
+          .borderRadius(9)
+          .justifyContent(FlexAlign.Center)
+
+          Text('切换到「备选」标签添加房源')
+            .fontSize(FontSizes.BODY_SMALL)
+            .fontColor(Colors.TEXT_SECONDARY)
+            .fontFamily(Fonts.CN)
+            .margin({ left: 8 })
+        }
+        .width('100%')
+        .alignItems(VerticalAlign.Center)
+
+        Row() {
+          Row() {
+            Text('2')
+              .fontSize(10)
+              .fontColor(Colors.PRIMARY)
+              .fontFamily(Fonts.NUMBER)
+              .fontWeight(FontWeight.Bold)
+          }
+          .width(18)
+          .height(18)
+          .backgroundColor(Colors.PRIMARY_LIGHT)
+          .borderRadius(9)
+          .justifyContent(FlexAlign.Center)
+
+          Text('左滑备选卡片点击「选定」')
+            .fontSize(FontSizes.BODY_SMALL)
+            .fontColor(Colors.TEXT_SECONDARY)
+            .fontFamily(Fonts.CN)
+            .margin({ left: 8 })
+        }
+        .width('100%')
+        .alignItems(VerticalAlign.Center)
+
+        Row() {
+          Row() {
+            Text('3')
+              .fontSize(10)
+              .fontColor(Colors.PRIMARY)
+              .fontFamily(Fonts.NUMBER)
+              .fontWeight(FontWeight.Bold)
+          }
+          .width(18)
+          .height(18)
+          .backgroundColor(Colors.PRIMARY_LIGHT)
+          .borderRadius(9)
+          .justifyContent(FlexAlign.Center)
+
+          Text('选定后可在此查看租期进度')
+            .fontSize(FontSizes.BODY_SMALL)
+            .fontColor(Colors.TEXT_SECONDARY)
+            .fontFamily(Fonts.CN)
+            .margin({ left: 8 })
+        }
+        .width('100%')
+        .alignItems(VerticalAlign.Center)
+
+        Row() {
+          Row() {
+            Text('4')
+              .fontSize(10)
+              .fontColor(Colors.PRIMARY)
+              .fontFamily(Fonts.NUMBER)
+              .fontWeight(FontWeight.Bold)
+          }
+          .width(18)
+          .height(18)
+          .backgroundColor(Colors.PRIMARY_LIGHT)
+          .borderRadius(9)
+          .justifyContent(FlexAlign.Center)
+
+          Text('左滑在租卡片可「取消选定」')
+            .fontSize(FontSizes.BODY_SMALL)
+            .fontColor(Colors.TEXT_SECONDARY)
+            .fontFamily(Fonts.CN)
+            .margin({ left: 8 })
+        }
+        .width('100%')
+        .alignItems(VerticalAlign.Center)
+      }
+      .width('100%')
+      .padding({ left: 40, right: 40 })
+      .margin({ top: 12 })
     }
     .width('100%')
     .height(320)

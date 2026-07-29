@@ -223,14 +223,89 @@ export struct CandidateContent {
                     .fontSize(36)
                     .fontColor([Colors.TEXT_MUTED])
 
-                  Text('暂无备选，点击 + 添加看房候选')
-                    .fontSize(FontSizes.BODY_SMALL)
-                    .fontColor(Colors.TEXT_MUTED)
+                  Text('暂无备选房源')
+                    .fontSize(FontSizes.BODY_LARGE)
+                    .fontColor(Colors.TEXT_SECONDARY)
                     .fontFamily(Fonts.CN)
+                    .fontWeight(FontWeight.Medium)
                     .margin({ top: 12 })
+
+                  Column({ space: 6 }) {
+                    Row() {
+                      Row() {
+                        Text('1')
+                          .fontSize(10)
+                          .fontColor(Colors.PRIMARY)
+                          .fontFamily(Fonts.NUMBER)
+                          .fontWeight(FontWeight.Bold)
+                      }
+                      .width(18)
+                      .height(18)
+                      .backgroundColor(Colors.PRIMARY_LIGHT)
+                      .borderRadius(9)
+                      .justifyContent(FlexAlign.Center)
+
+                      Text('点击右下角 + 添加看房候选')
+                        .fontSize(FontSizes.BODY_SMALL)
+                        .fontColor(Colors.TEXT_SECONDARY)
+                        .fontFamily(Fonts.CN)
+                        .margin({ left: 8 })
+                    }
+                    .width('100%')
+                    .alignItems(VerticalAlign.Center)
+
+                    Row() {
+                      Row() {
+                        Text('2')
+                          .fontSize(10)
+                          .fontColor(Colors.PRIMARY)
+                          .fontFamily(Fonts.NUMBER)
+                          .fontWeight(FontWeight.Bold)
+                      }
+                      .width(18)
+                      .height(18)
+                      .backgroundColor(Colors.PRIMARY_LIGHT)
+                      .borderRadius(9)
+                      .justifyContent(FlexAlign.Center)
+
+                      Text('左滑备选卡片可「选定」或「删除」')
+                        .fontSize(FontSizes.BODY_SMALL)
+                        .fontColor(Colors.TEXT_SECONDARY)
+                        .fontFamily(Fonts.CN)
+                        .margin({ left: 8 })
+                    }
+                    .width('100%')
+                    .alignItems(VerticalAlign.Center)
+
+                    Row() {
+                      Row() {
+                        Text('3')
+                          .fontSize(10)
+                          .fontColor(Colors.PRIMARY)
+                          .fontFamily(Fonts.NUMBER)
+                          .fontWeight(FontWeight.Bold)
+                      }
+                      .width(18)
+                      .height(18)
+                      .backgroundColor(Colors.PRIMARY_LIGHT)
+                      .borderRadius(9)
+                      .justifyContent(FlexAlign.Center)
+
+                      Text('选定后房源将出现在首页')
+                        .fontSize(FontSizes.BODY_SMALL)
+                        .fontColor(Colors.TEXT_SECONDARY)
+                        .fontFamily(Fonts.CN)
+                        .margin({ left: 8 })
+                    }
+                    .width('100%')
+                    .alignItems(VerticalAlign.Center)
+                  }
+                  .width('100%')
+                  .padding({ left: 40, right: 40 })
+                  .margin({ top: 8 })
                 }
                 .width('100%')
-                .height(120)
+                .height(220)
                 .justifyContent(FlexAlign.Center)
                 .backgroundColor(Colors.CARD_BG)
                 .borderRadius(Radius.CARD)
@@ -260,6 +335,26 @@ export struct CandidateContent {
                 .listDirection(Axis.Vertical)
                 .scrollBar(BarState.Off)
                 .nestedScroll({ scrollForward: NestedScrollMode.PARENT_FIRST, scrollBackward: NestedScrollMode.SELF_FIRST })
+
+                if (!this.hasRentingProperty()) {
+                  Row() {
+                    SymbolGlyph($r('sys.symbol.lightbulb'))
+                      .fontSize(14)
+                      .fontColor([Colors.PRIMARY])
+
+                    Text('左滑备选卡片可「选定」为在租房源')
+                      .fontSize(FontSizes.CAPTION)
+                      .fontColor(Colors.PRIMARY)
+                      .fontFamily(Fonts.CN)
+                      .margin({ left: 6 })
+                  }
+                  .width('100%')
+                  .justifyContent(FlexAlign.Center)
+                  .padding({ top: 8, bottom: 8 })
+                  .backgroundColor(Colors.PRIMARY_LIGHT)
+                  .borderRadius(Radius.TAG)
+                  .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
+                }
               }
 
               Column().height(96)
