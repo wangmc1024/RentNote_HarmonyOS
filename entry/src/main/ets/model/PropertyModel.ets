@@ -117,6 +117,11 @@ export class MapPickerResult {
   siteName: string = '';
 }
 
+export class ImportResult {
+  imported: number = 0;
+  updated: number = 0;
+}
+
 export class UserProfileDTO {
   name: string = '';
   subtitle: string = '';

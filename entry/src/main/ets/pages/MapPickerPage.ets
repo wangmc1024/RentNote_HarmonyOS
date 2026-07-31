@@ -5,15 +5,6 @@ import { geoLocationManager } from '@kit.LocationKit';
 import { Colors, Fonts, FontSizes, Dimensions, Radius, Spacing } from '../common/DesignTokens';
 import { MapPickerResult } from '../model/PropertyModel';
 
-class ParsedSiteItem {
-  formattedAddress: string = '';
-  siteName: string = '';
-}
-
-class ReverseGeoParsed {
-  sites: ParsedSiteItem[] = [];
-}
-
 @Builder
 export function MapPickerBuilder() {
   MapPickerPage()
@@ -58,6 +49,7 @@ export struct MapPickerPage {
         });
         if (this.hasLocated) {
           this.moveToCurrentLocation();
+          this.selectLocation(this.initialLat, this.initialLng);
         }
       }
     };
@@ -81,6 +73,7 @@ export struct MapPickerPage {
       this.hasLocated = true;
       if (this.mapController) {
         this.moveToCurrentLocation();
+        this.selectLocation(result.latitude, result.longitude);
       }
     }).catch((_e: BusinessError) => {
     });
@@ -102,8 +95,12 @@ export struct MapPickerPage {
   }
 
   private async onMapClick(position: mapCommon.LatLng): Promise<void> {
-    this.selectedLat = position.latitude;
-    this.selectedLng = position.longitude;
+    this.selectLocation(position.latitude, position.longitude);
+  }
+
+  private async selectLocation(lat: number, lng: number): Promise<void> {
+    this.selectedLat = lat;
+    this.selectedLng = lng;
     this.hasSelection = true;
 
     if (this.pickerMarker) {
@@ -113,8 +110,8 @@ export struct MapPickerPage {
 
     const markerOptions: mapCommon.MarkerOptions = {
       position: {
-        latitude: position.latitude,
-        longitude: position.longitude
+        latitude: lat,
+        longitude: lng
       },
       clickable: false,
       draggable: true,
@@ -132,8 +129,8 @@ export struct MapPickerPage {
 
     const params: site.ReverseGeocodeParams = {
       location: {
-        latitude: position.latitude,
-        longitude: position.longitude
+        latitude: lat,
+        longitude: lng
       },
       language: 'cn',
       radius: 200
@@ -141,17 +138,50 @@ export struct MapPickerPage {
     site.reverseGeocode(params).then((result: site.ReverseGeocodeResult) => {
       this.selectedAddress = '';
       this.selectedSiteName = '';
-      const json: string = JSON.stringify(result);
-      const parsed: ReverseGeoParsed = JSON.parse(json) as ReverseGeoParsed;
-      if (parsed.sites && parsed.sites.length > 0) {
-        const addr: string = parsed.sites[0].formattedAddress ?? parsed.sites[0].siteName ?? '';
-        if (addr.length > 0) {
-          this.selectedAddress = addr;
+      let communityName: string = '';
+      if (result.pois && result.pois.length > 0) {
+        for (const poi of result.pois) {
+          if (poi.poiType && (poi.poiType.indexOf('住宅') >= 0 || poi.poiType.indexOf('小区') >= 0)) {
+            communityName = poi.name ?? '';
+            break;
+          }
         }
-        this.selectedSiteName = parsed.sites[0].siteName ?? '';
+        if (communityName.length === 0 && result.pois[0].name) {
+          communityName = result.pois[0].name ?? '';
+        }
+      }
+      if (communityName.length === 0 && result.addressComponent
+        && result.addressComponent.neighborhoods
+        && result.addressComponent.neighborhoods.length > 0) {
+        communityName = result.addressComponent.neighborhoods[0] ?? '';
+      }
+      this.selectedSiteName = communityName;
+      if (result.addressComponent) {
+        const ac: site.AddressComponent = result.addressComponent;
+        const parts: string[] = [];
+        const district: string = ac.subLocality1 ?? ac.adminLevel3 ?? '';
+        if (district.length > 0) {
+          parts.push(district);
+        }
+        if (ac.subLocality2 && ac.subLocality2.length > 0) {
+          parts.push(ac.subLocality2);
+        }
+        if (communityName.length > 0) {
+          parts.push(communityName);
+        } else if (result.pois && result.pois.length > 0 && result.pois[0].address) {
+          parts.push(result.pois[0].address ?? '');
+        }
+        if (parts.length > 0) {
+          this.selectedAddress = parts.join('');
+        }
+      }
+      if (this.selectedAddress.length === 0 && result.addressDescription
+        && result.addressDescription.length > 0) {
+        this.selectedAddress = result.addressDescription;
       }
     }).catch(() => {
       this.selectedAddress = '';
+      this.selectedSiteName = '';
     });
   }
 

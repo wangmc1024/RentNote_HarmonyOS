@@ -1,7 +1,7 @@
 import { preferences } from '@kit.ArkData';
 import { util } from '@kit.ArkTS';
 import { fileIo as fs } from '@kit.CoreFileKit';
-import { PropertyInfo, PropertyDTO, StatisticsOverview, UserProfileDTO, UserProfile } from '../model/PropertyModel';
+import { PropertyInfo, PropertyDTO, StatisticsOverview, UserProfileDTO, UserProfile, ImportResult } from '../model/PropertyModel';
 import EntryFormAbility from '../widget/EntryFormAbility';
 import { ReminderService } from '../service/ReminderService';
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -436,12 +436,12 @@ export class PropertyRepository {
     await this.safeFlush();
   }
 
-  async importFromJson(jsonStr: string): Promise<number> {
-    let imported: number = 0;
+  async importFromJson(jsonStr: string): Promise<ImportResult> {
+    const result: ImportResult = new ImportResult();
     try {
       const rawList: Object[] = JSON.parse(jsonStr) as Object[];
       if (!Array.isArray(rawList)) {
-        return 0;
+        return result;
       }
       const existingIds: Set<string> = new Set<string>();
       for (const p of this.properties) {
@@ -456,10 +456,70 @@ export class PropertyRepository {
         }
         const rawId: string = (raw['id'] as string) ?? '';
         if (rawId.length > 0 && existingIds.has(rawId)) {
+          const existIdx: number = this.properties.findIndex((item: PropertyInfo) => item.id === rawId);
+          if (existIdx >= 0) {
+            const updated: PropertyInfo = this.properties[existIdx].clone();
+            updated.name = name;
+            const addr: string = (raw['address'] as string) ?? '';
+            if (addr.length > 0) {
+              updated.address = addr;
+            }
+            const district: string = (raw['district'] as string) ?? '';
+            if (district.length > 0) {
+              updated.district = district;
+            }
+            const tags: string[] = (raw['tags'] as string[]) ?? [];
+            if (tags.length > 0) {
+              updated.tags = tags;
+            }
+            updated.monthlyRent = (raw['monthlyRent'] as number) ?? 0;
+            updated.deposit = (raw['deposit'] as number) ?? 0;
+            const startDate: string = (raw['startDate'] as string) ?? '';
+            if (startDate.length > 0) {
+              updated.startDate = startDate;
+            }
+            const endDate: string = (raw['endDate'] as string) ?? '';
+            if (endDate.length > 0) {
+              updated.endDate = endDate;
+            }
+            const status: string = (raw['status'] as string) ?? '';
+            if (status.length > 0) {
+              updated.status = status;
+            }
+            updated.billsPaid = (raw['billsPaid'] as number) ?? 0;
+            const imgUrls: string[] = (raw['imageUrls'] as string[]) ?? [];
+            const imgUrl: string = (raw['imageUrl'] as string) ?? '';
+            if (imgUrls.length > 0) {
+              updated.imageUrls = imgUrls;
+            } else if (imgUrl.length > 0) {
+              updated.imageUrls = [imgUrl];
+            }
+            const notes: string = (raw['notes'] as string) ?? '';
+            if (notes.length > 0) {
+              updated.notes = notes;
+            }
+            const renewalStatus: string = (raw['renewalStatus'] as string) ?? '';
+            if (renewalStatus.length > 0) {
+              updated.renewalStatus = renewalStatus;
+            }
+            updated.latitude = (raw['latitude'] as number) ?? 0;
+            updated.longitude = (raw['longitude'] as number) ?? 0;
+            const lastBillsResetMonth: string = (raw['lastBillsResetMonth'] as string) ?? '';
+            if (lastBillsResetMonth.length > 0) {
+              updated.lastBillsResetMonth = lastBillsResetMonth;
+            }
+            if (updated.status === 'renting' || updated.status === 'expiring') {
+              hasRentingImport = true;
+            }
+            const newList: PropertyInfo[] = [...this.properties];
+            newList[existIdx] = updated;
+            this.properties = newList;
+            result.updated++;
+          }
           continue;
         }
         const p: PropertyInfo = new PropertyInfo();
-        p.id = rawId.length > 0 ? rawId : Date.now().toString() + '_' + imported;
+        p.id = rawId.length > 0 ? rawId : Date.now().toString() + '_' + result.imported;
         p.name = name;
         p.address = (raw['address'] as string) ?? '';
         p.district = (raw['district'] as string) ?? '';
@@ -487,9 +547,9 @@ export class PropertyRepository {
         }
         this.properties = [...this.properties, p];
         existingIds.add(p.id);
-        imported++;
+        result.imported++;
       }
-      if (imported > 0) {
+      if (result.imported > 0 || result.updated > 0) {
         if (hasRentingImport) {
           const rentingList: PropertyInfo[] = this.getRentingProperties();
           if (rentingList.length > 1) {
@@ -513,9 +573,9 @@ export class PropertyRepository {
         this.notifyWidgetUpdate();
       }
     } catch (_e) {
-      return 0;
+      return result;
     }
-    return imported;
+    return result;
   }
 
   exportToJson(): string {
