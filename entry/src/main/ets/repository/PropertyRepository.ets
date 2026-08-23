@@ -436,6 +436,56 @@ export class PropertyRepository {
     await this.safeFlush();
   }
 
+  private resolveImportImages(raw: Record<string, Object>, context: Context | null): string[] {
+    const base64: util.Base64Helper = new util.Base64Helper();
+    const imageData: string[] = (raw['imageData'] as string[]) ?? [];
+    const imgUrls: string[] = (raw['imageUrls'] as string[]) ?? [];
+    const imgUrl: string = (raw['imageUrl'] as string) ?? '';
+    const resolvedUrls: string[] = [];
+
+    if (imageData.length > 0 && context !== null) {
+      const imagesDir: string = context.filesDir + '/property_images';
+      try {
+        if (!fs.accessSync(imagesDir)) {
+          fs.mkdirSync(imagesDir);
+        }
+      } catch (_e) {
+        hilog.warn(0, TAG, 'resolveImportImages: failed to create images dir');
+      }
+      for (const b64Str of imageData) {
+        try {
+          const decoded: Uint8Array = base64.decodeSync(b64Str);
+          const ts: number = Date.now();
+          const rand: number = Math.floor(Math.random() * 10000);
+          const fileName: string = `img_${ts}_${rand}.jpg`;
+          const filePath: string = `${imagesDir}/${fileName}`;
+          const file: fs.File = fs.openSync(filePath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
+          fs.writeSync(file.fd, decoded.buffer);
+          fs.closeSync(file);
+          resolvedUrls.push(`file://${filePath}`);
+        } catch (_e) {
+          hilog.warn(0, TAG, 'resolveImportImages: failed to decode/save image data');
+        }
+      }
+      if (resolvedUrls.length > 0) {
+        return resolvedUrls;
+      }
+    }
+
+    const fallbackUrls: string[] = imgUrls.length > 0 ? imgUrls : (imgUrl.length > 0 ? [imgUrl] : []);
+    for (const uri of fallbackUrls) {
+      try {
+        const filePath: string = this.uriToPath(uri);
+        if ((filePath.startsWith('/data/') || filePath.startsWith('/storage/')) && fs.accessSync(filePath)) {
+          resolvedUrls.push(uri);
+        }
+      } catch (_e) {
+        hilog.warn(0, TAG, 'resolveImportImages: skipping inaccessible image URI');
+      }
+    }
+    return resolvedUrls;
+  }
+
   async importFromJson(jsonStr: string): Promise<ImportResult> {
     const result: ImportResult = new ImportResult();
     try {
@@ -487,12 +537,9 @@ export class PropertyRepository {
               updated.status = status;
             }
             updated.billsPaid = (raw['billsPaid'] as number) ?? 0;
-            const imgUrls: string[] = (raw['imageUrls'] as string[]) ?? [];
-            const imgUrl: string = (raw['imageUrl'] as string) ?? '';
-            if (imgUrls.length > 0) {
-              updated.imageUrls = imgUrls;
-            } else if (imgUrl.length > 0) {
-              updated.imageUrls = [imgUrl];
+            const resolvedUrls: string[] = this.resolveImportImages(raw, this.initContext);
+            if (resolvedUrls.length > 0) {
+              updated.imageUrls = resolvedUrls;
             }
             const notes: string = (raw['notes'] as string) ?? '';
             if (notes.length > 0) {
@@ -530,13 +577,8 @@ export class PropertyRepository {
         p.endDate = (raw['endDate'] as string) ?? '';
         p.status = (raw['status'] as string) ?? 'candidate';
         p.billsPaid = (raw['billsPaid'] as number) ?? 0;
-        const imgUrls: string[] = (raw['imageUrls'] as string[]) ?? [];
-        const imgUrl: string = (raw['imageUrl'] as string) ?? '';
-        if (imgUrls.length > 0) {
-          p.imageUrls = imgUrls;
-        } else if (imgUrl.length > 0) {
-          p.imageUrls = [imgUrl];
-        }
+        const resolvedUrls: string[] = this.resolveImportImages(raw, this.initContext);
+        p.imageUrls = resolvedUrls;
         p.notes = (raw['notes'] as string) ?? '';
         p.renewalStatus = (raw['renewalStatus'] as string) ?? '';
         p.latitude = (raw['latitude'] as number) ?? 0;
@@ -579,9 +621,33 @@ export class PropertyRepository {
   }
 
   exportToJson(): string {
+    const base64: util.Base64Helper = new util.Base64Helper();
     const dtoList: PropertyDTO[] = [];
     for (const p of this.properties) {
-      dtoList.push(p.toDTO());
+      const dto: PropertyDTO = p.toDTO();
+      const validImageUrls: string[] = [];
+      const imageDataList: string[] = [];
+      for (const uri of p.imageUrls) {
+        try {
+          const filePath: string = this.uriToPath(uri);
+          if ((filePath.startsWith('/data/') || filePath.startsWith('/storage/')) && fs.accessSync(filePath)) {
+            const file: fs.File = fs.openSync(filePath, fs.OpenMode.READ_ONLY);
+            const stat: fs.Stat = fs.statSync(file.fd);
+            const arrayBuffer: ArrayBuffer = new ArrayBuffer(stat.size);
+            fs.readSync(file.fd, arrayBuffer);
+            fs.closeSync(file);
+            const uint8Array: Uint8Array = new Uint8Array(arrayBuffer);
+            const base64Str: string = base64.encodeToStringSync(uint8Array);
+            imageDataList.push(base64Str);
+            validImageUrls.push(uri);
+          }
+        } catch (_e) {
+          hilog.warn(0, TAG, 'exportToJson: skipping unreadable image file');
+        }
+      }
+      dto.imageUrls = validImageUrls;
+      dto.imageData = imageDataList;
+      dtoList.push(dto);
     }
     return JSON.stringify(dtoList, null, 2);
   }

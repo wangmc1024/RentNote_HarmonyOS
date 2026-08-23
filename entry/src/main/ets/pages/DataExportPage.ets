@@ -119,7 +119,7 @@ export struct DataExportPage {
                 .fontWeight(FontWeight.Medium)
                 .alignSelf(ItemAlign.Start)
 
-              Text('1. JSON 格式保留完整数据结构，适合备份和跨设备迁移\n2. 导出的 JSON 文件可通过"数据导入"功能恢复\n3. 导出包含所有在租、备选房源数据\n4. 请妥善保管导出文件，避免数据泄露')
+              Text('1. JSON 格式保留完整数据结构，适合备份和跨设备迁移\n2. 导出的 JSON 文件可通过"数据导入"功能恢复\n3. 导出包含所有在租、备选房源数据\n4. 导出文件包含照片数据(Base64编码)，文件可能较大\n5. 请妥善保管导出文件，避免数据泄露')
                 .fontSize(FontSizes.BODY_SMALL)
                 .fontColor(Colors.TEXT_SECONDARY)
                 .fontFamily(Fonts.CN)

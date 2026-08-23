@@ -65,6 +65,7 @@ export class PropertyInfo {
     dto.status = this.status;
     dto.billsPaid = this.billsPaid;
     dto.imageUrls = this.imageUrls;
+    dto.imageData = [];
     dto.notes = this.notes;
     dto.renewalStatus = this.renewalStatus;
     dto.latitude = this.latitude;
@@ -87,6 +88,7 @@ export class PropertyDTO {
   status: string = 'renting';
   billsPaid: number = 0;
   imageUrls: string[] = [];
+  imageData: string[] = [];
   notes: string = '';
   renewalStatus: string = '';
   latitude: number = 0;

@@ -166,6 +166,12 @@ export struct MapPickerPage {
         if (ac.subLocality2 && ac.subLocality2.length > 0) {
           parts.push(ac.subLocality2);
         }
+        if (ac.streetNumber && ac.streetNumber.streetName && ac.streetNumber.streetName.length > 0) {
+          parts.push(ac.streetNumber.streetName);
+        }
+        if (ac.streetNumber && ac.streetNumber.streetNumber && ac.streetNumber.streetNumber.length > 0) {
+          parts.push(ac.streetNumber.streetNumber);
+        }
         if (communityName.length > 0) {
           parts.push(communityName);
         } else if (result.pois && result.pois.length > 0 && result.pois[0].address) {

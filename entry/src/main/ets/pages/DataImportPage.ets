@@ -138,7 +138,7 @@ export struct DataImportPage {
                 .fontWeight(FontWeight.Medium)
                 .alignSelf(ItemAlign.Start)
 
-              Text('1. 选择要导入的 JSON 文件\n2. 文件需包含房源名称、地址、月租金等必填字段\n3. 导入数据将与现有数据合并，重复项自动更新\n4. 导入完成后可在首页查看新增和更新的房源')
+              Text('1. 选择要导入的 JSON 文件\n2. 文件需包含房源名称、地址、月租金等必填字段\n3. 支持含照片数据的 JSON 格式导入，兼容旧版不含照片的 JSON\n4. 导入数据将与现有数据合并，重复项自动更新\n5. 导入完成后可在首页查看新增和更新的房源')
                 .fontSize(FontSizes.BODY_SMALL)
                 .fontColor(Colors.TEXT_SECONDARY)
                 .fontFamily(Fonts.CN)
