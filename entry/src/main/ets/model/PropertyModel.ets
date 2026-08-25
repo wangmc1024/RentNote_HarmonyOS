@@ -113,10 +113,21 @@ export class DeleteResult {
 }
 
 export class MapPickerResult {
+  district: string = '';
+  township: string = '';
+  siteName: string = '';
   latitude: number = 0;
   longitude: number = 0;
+}
+
+export class PoiItem {
+  name: string = '';
+  poiType: string = '';
   address: string = '';
-  siteName: string = '';
+  latitude: number = 0;
+  longitude: number = 0;
+  distance: number = 0;
+  isResidential: boolean = false;
 }
 
 export class ImportResult {

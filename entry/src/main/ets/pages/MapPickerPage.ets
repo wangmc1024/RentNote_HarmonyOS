@@ -3,20 +3,28 @@ import { AsyncCallback, BusinessError } from '@kit.BasicServicesKit';
 import { site } from '@kit.MapKit';
 import { geoLocationManager } from '@kit.LocationKit';
 import { Colors, Fonts, FontSizes, Dimensions, Radius, Spacing } from '../common/DesignTokens';
-import { MapPickerResult } from '../model/PropertyModel';
+import { MapPickerResult, PoiItem } from '../model/PropertyModel';
 
 @Builder
 export function MapPickerBuilder() {
   MapPickerPage()
 }
 
+const RESIDENTIAL_KEYWORDS: string[] = [
+  '住宅', '小区', '公寓', '家园', '花园', '别墅', '商务住宅', '住宅区', '住宅楼', '居民楼', '居民小区'
+];
+
 @ComponentV2
 export struct MapPickerPage {
   @Local selectedLat: number = 0;
   @Local selectedLng: number = 0;
-  @Local selectedAddress: string = '';
+  @Local district: string = '';
+  @Local township: string = '';
   @Local selectedSiteName: string = '';
   @Local hasSelection: boolean = false;
+  @Local fallbackTip: string = '';
+  @Local poiList: PoiItem[] = [];
+  @Local showPoiSheet: boolean = false;
   @Consumer('navPathStack') navPathStack: NavPathStack = new NavPathStack();
 
   private mapOptions?: mapCommon.MapOptions;
@@ -27,6 +35,7 @@ export struct MapPickerPage {
   private initialLat: number = 39.904;
   private initialLng: number = 116.407;
   private hasLocated: boolean = false;
+  private lastClickTime: number = 0;
 
   aboutToAppear(): void {
     this.requestCurrentLocation();
@@ -95,7 +104,36 @@ export struct MapPickerPage {
   }
 
   private async onMapClick(position: mapCommon.LatLng): Promise<void> {
+    const now: number = Date.now();
+    if (now - this.lastClickTime < 300) {
+      return;
+    }
+    this.lastClickTime = now;
     this.selectLocation(position.latitude, position.longitude);
+  }
+
+  private isResidentialPoi(poiType: string, name: string): boolean {
+    const combined: string = (poiType ?? '') + (name ?? '');
+    for (const keyword of RESIDENTIAL_KEYWORDS) {
+      if (combined.indexOf(keyword) >= 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private extractDistrict(ac: site.AddressComponent): string {
+    return ac.subLocality1 ?? ac.adminLevel3 ?? '';
+  }
+
+  private extractTownship(ac: site.AddressComponent): string {
+    return ac.subLocality2 ?? '';
+  }
+
+  private onPoiSelected(poi: PoiItem): void {
+    this.selectedSiteName = poi.name;
+    this.fallbackTip = '';
+    this.showPoiSheet = false;
   }
 
   private async selectLocation(lat: number, lng: number): Promise<void> {
@@ -132,62 +170,96 @@ export struct MapPickerPage {
         latitude: lat,
         longitude: lng
       },
-      language: 'cn',
-      radius: 200
+      language: 'zh',
+      radius: 200,
+      isExtension: true,
+      isNearbyAoi: false
     };
     site.reverseGeocode(params).then((result: site.ReverseGeocodeResult) => {
-      this.selectedAddress = '';
       this.selectedSiteName = '';
-      let communityName: string = '';
-      if (result.pois && result.pois.length > 0) {
-        for (const poi of result.pois) {
-          if (poi.poiType && (poi.poiType.indexOf('住宅') >= 0 || poi.poiType.indexOf('小区') >= 0)) {
-            communityName = poi.name ?? '';
-            break;
+      this.district = '';
+      this.township = '';
+      this.fallbackTip = '';
+      this.showPoiSheet = false;
+      this.poiList = [];
+
+      const ac: site.AddressComponent | undefined = result.addressComponent;
+      const dist: string = ac ? this.extractDistrict(ac) : '';
+      const twp: string = ac ? this.extractTownship(ac) : '';
+
+      if (result.aois && result.aois.length > 0) {
+        this.selectedSiteName = result.aois[0].name ?? '';
+        this.district = dist;
+        this.township = twp;
+        this.fallbackTip = '';
+      } else {
+        const parsedPois: PoiItem[] = [];
+        if (result.pois && result.pois.length > 0) {
+          for (const poi of result.pois) {
+            const poiName: string = poi.name ?? '';
+            const poiType: string = poi.poiType ?? '';
+            const poiDistance: number = poi.distance ?? 0;
+            if (poiDistance > 250) {
+              continue;
+            }
+            const isRes: boolean = this.isResidentialPoi(poiType, poiName);
+            const item: PoiItem = new PoiItem();
+            item.name = poiName;
+            item.poiType = poiType;
+            item.address = poi.address ?? '';
+            item.latitude = poi.location?.latitude ?? 0;
+            item.longitude = poi.location?.longitude ?? 0;
+            item.distance = poiDistance;
+            item.isResidential = isRes;
+            parsedPois.push(item);
           }
         }
-        if (communityName.length === 0 && result.pois[0].name) {
-          communityName = result.pois[0].name ?? '';
+
+        parsedPois.sort((a: PoiItem, b: PoiItem) => {
+          if (a.isResidential && !b.isResidential) {
+            return -1;
+          }
+          if (!a.isResidential && b.isResidential) {
+            return 1;
+          }
+          return a.distance - b.distance;
+        });
+
+        if (parsedPois.length > 0) {
+          this.poiList = parsedPois;
+          this.showPoiSheet = true;
+
+          const firstPoi: PoiItem = parsedPois[0];
+          this.selectedSiteName = firstPoi.name;
+          this.district = dist;
+          this.township = twp;
+          this.fallbackTip = '';
+        } else {
+          let communityName: string = '';
+          if (ac && ac.neighborhoods && ac.neighborhoods.length > 0) {
+            communityName = ac.neighborhoods[0] ?? '';
+          }
+
+          if (communityName.length > 0) {
+            this.selectedSiteName = communityName;
+            this.district = dist;
+            this.township = twp;
+            this.fallbackTip = '未识别小区，取自社区信息，请核对';
+          } else {
+            this.selectedSiteName = '';
+            this.district = dist;
+            this.township = twp;
+            this.fallbackTip = '';
+          }
         }
-      }
-      if (communityName.length === 0 && result.addressComponent
-        && result.addressComponent.neighborhoods
-        && result.addressComponent.neighborhoods.length > 0) {
-        communityName = result.addressComponent.neighborhoods[0] ?? '';
-      }
-      this.selectedSiteName = communityName;
-      if (result.addressComponent) {
-        const ac: site.AddressComponent = result.addressComponent;
-        const parts: string[] = [];
-        const district: string = ac.subLocality1 ?? ac.adminLevel3 ?? '';
-        if (district.length > 0) {
-          parts.push(district);
-        }
-        if (ac.subLocality2 && ac.subLocality2.length > 0) {
-          parts.push(ac.subLocality2);
-        }
-        if (ac.streetNumber && ac.streetNumber.streetName && ac.streetNumber.streetName.length > 0) {
-          parts.push(ac.streetNumber.streetName);
-        }
-        if (ac.streetNumber && ac.streetNumber.streetNumber && ac.streetNumber.streetNumber.length > 0) {
-          parts.push(ac.streetNumber.streetNumber);
-        }
-        if (communityName.length > 0) {
-          parts.push(communityName);
-        } else if (result.pois && result.pois.length > 0 && result.pois[0].address) {
-          parts.push(result.pois[0].address ?? '');
-        }
-        if (parts.length > 0) {
-          this.selectedAddress = parts.join('');
-        }
-      }
-      if (this.selectedAddress.length === 0 && result.addressDescription
-        && result.addressDescription.length > 0) {
-        this.selectedAddress = result.addressDescription;
       }
     }).catch(() => {
-      this.selectedAddress = '';
       this.selectedSiteName = '';
+      this.district = '';
+      this.township = '';
+      this.fallbackTip = '';
+      this.poiList = [];
+      this.showPoiSheet = false;
     });
   }
 
@@ -196,11 +268,96 @@ export struct MapPickerPage {
       return;
     }
     const result: MapPickerResult = new MapPickerResult();
+    result.district = this.district;
+    result.township = this.township;
+    result.siteName = this.selectedSiteName;
     result.latitude = this.selectedLat;
     result.longitude = this.selectedLng;
-    result.address = this.selectedAddress;
-    result.siteName = this.selectedSiteName;
     this.navPathStack.pop(result);
+  }
+
+  private buildLocationDisplay(): string {
+    const parts: string[] = [];
+    if (this.district.length > 0) {
+      parts.push(this.district);
+    }
+    if (this.township.length > 0) {
+      parts.push(this.township);
+    }
+    if (this.selectedSiteName.length > 0) {
+      parts.push(this.selectedSiteName);
+    }
+    return parts.join(' ');
+  }
+
+  @Builder
+  poiListItem(poi: PoiItem) {
+    ListItem() {
+      Row({ space: 12 }) {
+        Column() {
+          if (poi.isResidential) {
+            SymbolGlyph($r('sys.symbol.house'))
+              .fontSize(20)
+              .fontColor([Colors.PRIMARY])
+          } else {
+            SymbolGlyph($r('sys.symbol.map'))
+              .fontSize(20)
+              .fontColor([Colors.TEXT_MUTED])
+          }
+        }
+        .width(40)
+        .height(40)
+        .justifyContent(FlexAlign.Center)
+        .backgroundColor(poi.isResidential ? Colors.PRIMARY_LIGHT : Colors.CARD_BG)
+        .borderRadius(8)
+
+        Column({ space: 4 }) {
+          Row({ space: 8 }) {
+            Text(poi.name)
+              .fontSize(FontSizes.BODY)
+              .fontColor(Colors.TEXT_PRIMARY)
+              .fontFamily(Fonts.CN)
+              .fontWeight(FontWeight.Medium)
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+              .layoutWeight(1)
+
+            if (poi.isResidential) {
+              Text('住宅')
+                .fontSize(10)
+                .fontColor(Colors.PRIMARY)
+                .fontFamily(Fonts.CN)
+                .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+                .backgroundColor(Colors.PRIMARY_LIGHT)
+                .borderRadius(4)
+            }
+
+            if (poi.distance > 0) {
+              Text(poi.distance < 1000 ?
+                `${Math.round(poi.distance)}m` :
+                `${(poi.distance / 1000).toFixed(1)}km`)
+                .fontSize(FontSizes.CAPTION)
+                .fontColor(Colors.TEXT_MUTED)
+                .fontFamily(Fonts.NUMBER)
+            }
+          }
+          .width('100%')
+
+          if (poi.address.length > 0 && poi.address !== poi.name) {
+            Text(poi.address)
+              .fontSize(FontSizes.CAPTION)
+              .fontColor(Colors.TEXT_SECONDARY)
+              .fontFamily(Fonts.CN)
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+          }
+        }
+        .layoutWeight(1)
+      }
+      .width('100%')
+      .padding({ left: Spacing.CARD_PADDING_SM, right: Spacing.CARD_PADDING_SM, top: 12, bottom: 12 })
+      .alignItems(VerticalAlign.Center)
+    }
   }
 
   build() {
@@ -218,7 +375,7 @@ export struct MapPickerPage {
                   .fontSize(18)
                   .fontColor([Colors.PRIMARY])
 
-                Text(this.selectedAddress || '正在获取地址...')
+                Text(this.buildLocationDisplay() || '正在获取地址...')
                   .fontSize(FontSizes.BODY)
                   .fontColor(Colors.TEXT_PRIMARY)
                   .fontFamily(Fonts.CN)
@@ -227,9 +384,29 @@ export struct MapPickerPage {
                   .textOverflow({ overflow: TextOverflow.Ellipsis })
                   .margin({ left: 8 })
                   .layoutWeight(1)
+
+                if (this.poiList.length > 0) {
+                  Text(`${this.poiList.length}个结果`)
+                    .fontSize(FontSizes.CAPTION)
+                    .fontColor(Colors.PRIMARY)
+                    .fontFamily(Fonts.CN)
+                    .onClick(() => {
+                      this.showPoiSheet = true;
+                    })
+                }
               }
               .width('100%')
               .alignItems(VerticalAlign.Top)
+
+              if (this.fallbackTip.length > 0) {
+                Text(this.fallbackTip)
+                  .fontSize(FontSizes.CAPTION)
+                  .fontColor(Colors.WARNING)
+                  .fontFamily(Fonts.CN)
+                  .maxLines(1)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis })
+                  .margin({ left: 26, top: 4 })
+              }
             }
             .width('100%')
             .padding(Spacing.CARD_PADDING)
@@ -269,8 +446,48 @@ export struct MapPickerPage {
       }
       .width('100%')
       .height('100%')
+      .bindSheet($$this.showPoiSheet, this.poiSheetBuilder(), {
+        height: '50%',
+        dragBar: true,
+        backgroundColor: Colors.BG_PRIMARY,
+        onDisappear: () => {
+        }
+      })
     }
     .hideTitleBar(false)
     .title('选择位置')
+  }
+
+  @Builder
+  poiSheetBuilder() {
+    Column() {
+      Row() {
+        Text('选择位置')
+          .fontSize(FontSizes.SECTION_TITLE)
+          .fontColor(Colors.TEXT_PRIMARY)
+          .fontFamily(Fonts.CN)
+          .fontWeight(FontWeight.Bold)
+
+        Blank()
+
+        Text(`${this.poiList.length}个结果`)
+          .fontSize(FontSizes.CAPTION)
+          .fontColor(Colors.TEXT_MUTED)
+          .fontFamily(Fonts.CN)
+      }
+      .width('100%')
+      .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: 8, bottom: 8 })
+
+      List({ space: 0 }) {
+        ForEach(this.poiList, (poi: PoiItem, index: number) => {
+          this.poiListItem(poi)
+        }, (item: PoiItem, idx: number) => idx.toString())
+      }
+      .width('100%')
+      .layoutWeight(1)
+      .divider({ strokeWidth: 0.5, color: Colors.DIVIDER_DARK, startMargin: 56, endMargin: 16 })
+    }
+    .width('100%')
+    .height('100%')
   }
 }

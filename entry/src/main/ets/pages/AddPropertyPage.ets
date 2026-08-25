@@ -299,11 +299,18 @@ export struct AddPropertyPage {
                   this.navPathStack.pushPathByName('MapPicker', null, (popInfo: PopInfo) => {
                     if (popInfo.result) {
                       const mapResult: MapPickerResult = popInfo.result as MapPickerResult;
+                      this.district = mapResult.district;
                       this.latitude = mapResult.latitude;
                       this.longitude = mapResult.longitude;
-                      if (mapResult.address && mapResult.address.length > 0) {
-                        this.address = mapResult.address;
-                        this.district = this.extractDistrict(mapResult.address);
+                      const addrParts: string[] = [];
+                      if (mapResult.township && mapResult.township.length > 0) {
+                        addrParts.push(mapResult.township);
+                      }
+                      if (mapResult.siteName && mapResult.siteName.length > 0) {
+                        addrParts.push(mapResult.siteName);
+                      }
+                      if (addrParts.length > 0) {
+                        this.address = addrParts.join('');
                       }
                       if (mapResult.siteName && mapResult.siteName.length > 0 && this.communityName.length === 0) {
                         this.communityName = mapResult.siteName;
