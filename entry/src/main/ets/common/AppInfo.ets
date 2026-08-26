@@ -1,6 +1,6 @@
 export class AppInfo {
   static readonly NAME: string = '小寓台账';
-  static readonly VERSION: string = '2.1.0';
+  static readonly VERSION: string = '2.2.0';
   static readonly VERSION_LABEL: string = `版本 ${AppInfo.VERSION}`;
   static readonly FOOTER_LABEL: string = `小寓台账 v${AppInfo.VERSION} · 华为鸿蒙元服务`;
   static readonly DESCRIPTION: string = '华为鸿蒙租房记录元服务\n轻松管理租房台账，到期智能提醒';
