@@ -1,9 +1,12 @@
 import { MapComponent, mapCommon, map } from '@kit.MapKit';
 import { AsyncCallback, BusinessError } from '@kit.BasicServicesKit';
 import { site } from '@kit.MapKit';
-import { geoLocationManager } from '@kit.LocationKit';
+import { common } from '@kit.AbilityKit';
 import { Colors, Fonts, FontSizes, Dimensions, Radius, Spacing } from '../common/DesignTokens';
 import { MapPickerResult, PoiItem } from '../model/PropertyModel';
+import { MapLocationHelper, createMapOptions } from '../common/MapLocationHelper';
+
+const TAG: string = '[MapPicker]';
 
 @Builder
 export function MapPickerBuilder() {
@@ -34,73 +37,34 @@ export struct MapPickerPage {
   private pickerMarker?: map.Marker;
   private initialLat: number = 39.904;
   private initialLng: number = 116.407;
-  private hasLocated: boolean = false;
   private lastClickTime: number = 0;
+  private locationHelper: MapLocationHelper = new MapLocationHelper((lat: number, lng: number) => {
+    // 定位成功回调 → 自动选点
+    if (this.mapController) {
+      this.selectLocation(lat, lng);
+    }
+  });
 
   aboutToAppear(): void {
-    this.requestCurrentLocation();
+    const context = getContext(this) as common.UIAbilityContext;
+    this.locationHelper.requestLocationPermission(context);
 
-    this.mapOptions = {
-      position: {
-        target: {
-          latitude: this.initialLat,
-          longitude: this.initialLng
-        },
-        zoom: 12
-      }
-    };
+    this.mapOptions = createMapOptions(this.initialLat, this.initialLng, 12);
     this.callback = async (err: BusinessError | null, mapController: map.MapComponentController) => {
       if (!err) {
         this.mapController = mapController;
+        this.locationHelper.setMapController(mapController, 500);
         this.mapEventManager = this.mapController.getEventManager();
         this.mapEventManager.on('mapClick', (position: mapCommon.LatLng) => {
           this.onMapClick(position);
         });
-        if (this.hasLocated) {
-          this.moveToCurrentLocation();
-          this.selectLocation(this.initialLat, this.initialLng);
+        // 定位先于地图就绪完成 → 自动选点
+        const state = this.locationHelper.getState();
+        if (state.hasCachedLocation) {
+          this.selectLocation(state.cachedLat, state.cachedLng);
         }
       }
     };
-  }
-
-  private requestCurrentLocation(): void {
-    try {
-      if (!geoLocationManager.isLocationEnabled()) {
-        return;
-      }
-    } catch (_e) {
-      return;
-    }
-    const request: geoLocationManager.SingleLocationRequest = {
-      'locatingPriority': geoLocationManager.LocatingPriority.PRIORITY_LOCATING_SPEED,
-      'locatingTimeoutMs': 10000
-    };
-    geoLocationManager.getCurrentLocation(request).then((result: geoLocationManager.Location) => {
-      this.initialLat = result.latitude;
-      this.initialLng = result.longitude;
-      this.hasLocated = true;
-      if (this.mapController) {
-        this.moveToCurrentLocation();
-        this.selectLocation(result.latitude, result.longitude);
-      }
-    }).catch((_e: BusinessError) => {
-    });
-  }
-
-  private moveToCurrentLocation(): void {
-    if (!this.mapController) {
-      return;
-    }
-    const cameraPosition: mapCommon.CameraPosition = {
-      target: {
-        latitude: this.initialLat,
-        longitude: this.initialLng
-      },
-      zoom: 14
-    };
-    const cameraUpdate: map.CameraUpdate = map.newCameraPosition(cameraPosition);
-    this.mapController.moveCamera(cameraUpdate);
   }
 
   private async onMapClick(position: mapCommon.LatLng): Promise<void> {
@@ -382,8 +346,9 @@ export struct MapPickerPage {
       Stack({ alignContent: Alignment.Bottom }) {
         MapComponent({ mapOptions: this.mapOptions, mapCallback: this.callback })
           .width('100%')
-          .layoutWeight(1)
+          .height('100%')
 
+        // 底部选址面板
         if (this.hasSelection) {
           Column() {
             Column() {

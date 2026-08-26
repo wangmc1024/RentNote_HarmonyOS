@@ -1,10 +1,3 @@
-/**
- * 房源详情页 - NavDestination 页面
- * 使用 @ComponentV2 装饰器
- * 通过 NavDestination 的 onReady 回调获取传入的 propertyId 参数
- * 从 PropertyDetailViewModel 加载对应房源数据
- * 统一使用 HeaderBar 组件
- */
 import { Colors, Fonts, FontSizes, Dimensions, Radius, Shadows, Spacing, getTagTextColor, getTagBgColor } from '../common/DesignTokens';
 import { HeaderBar } from '../components/HeaderBar';
 import { PropertyDetailViewModel } from '../viewmodel/PropertyDetailViewModel';
@@ -12,6 +5,8 @@ import { PropertyInfo, PropertyIdParam, DeleteResult } from '../model/PropertyMo
 import { PropertyRepository } from '../repository/PropertyRepository';
 import { MapComponent, mapCommon, map } from '@kit.MapKit';
 import { AsyncCallback, BusinessError } from '@kit.BasicServicesKit';
+import { common } from '@kit.AbilityKit';
+import { MapLocationHelper, createMapOptions } from '../common/MapLocationHelper';
 
 @Builder
 export function PropertyDetailBuilder() {
@@ -43,24 +38,21 @@ export struct PropertyDetailPage {
   private mapController?: map.MapComponentController;
   private detailMarker?: map.Marker;
   private listScroller: ListScroller = new ListScroller();
+  private locationHelper: MapLocationHelper = new MapLocationHelper();
 
   private get currentProperty(): PropertyInfo {
     return this.viewModel.property as PropertyInfo;
   }
 
   aboutToAppear(): void {
-    this.mapOptions = {
-      position: {
-        target: {
-          latitude: 39.904,
-          longitude: 116.407
-        },
-        zoom: 14
-      }
-    };
+    const context = getContext(this) as common.UIAbilityContext;
+    this.locationHelper.requestLocationPermission(context);
+
+    this.mapOptions = createMapOptions(39.904, 116.407, 14);
     this.mapCallback = async (err: BusinessError | null, mapController: map.MapComponentController) => {
       if (!err) {
         this.mapController = mapController;
+        this.locationHelper.setMapController(mapController);
         this.refreshMapMarker();
       }
     };
@@ -91,15 +83,8 @@ export struct PropertyDetailPage {
         this.detailMarker = marker;
       } catch (_e) {
       }
-      const cameraPosition: mapCommon.CameraPosition = {
-        target: {
-          latitude: p.latitude,
-          longitude: p.longitude
-        },
-        zoom: 14
-      };
-      const cameraUpdate: map.CameraUpdate = map.newCameraPosition(cameraPosition);
-      this.mapController.moveCamera(cameraUpdate);
+      // 使用 animateCamera 平滑移动到房源位置
+      this.locationHelper.animateToPosition(p.latitude, p.longitude, 14);
     }
   }
 
@@ -256,7 +241,7 @@ export struct PropertyDetailPage {
 
         // ===== 地图卡片 =====
         if (this.currentProperty.latitude !== 0 && this.currentProperty.longitude !== 0) {
-          Column() {
+          Stack() {
             MapComponent({ mapOptions: this.mapOptions, mapCallback: this.mapCallback })
               .width('100%')
               .height(Dimensions.MAP_CARD_HEIGHT)
@@ -264,6 +249,9 @@ export struct PropertyDetailPage {
               .clip(true)
           }
           .width('100%')
+          .height(Dimensions.MAP_CARD_HEIGHT)
+          .borderRadius(Radius.CARD)
+          .clip(true)
           .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
         } else {
           Column() {

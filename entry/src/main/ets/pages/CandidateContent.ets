@@ -3,6 +3,8 @@ import { PropertyInfo, PropertyIdParam } from '../model/PropertyModel';
 import { HomeViewModel } from '../viewmodel/HomeViewModel';
 import { MapComponent, mapCommon, map } from '@kit.MapKit';
 import { AsyncCallback, BusinessError } from '@kit.BasicServicesKit';
+import { common } from '@kit.AbilityKit';
+import { MapLocationHelper, createMapOptions } from '../common/MapLocationHelper';
 
 @ComponentV2
 export struct CandidateContent {
@@ -20,6 +22,7 @@ export struct CandidateContent {
   private mapController?: map.MapComponentController;
   private addedMarkers: map.Marker[] = [];
   private markerPropertyIds: string[] = [];
+  private locationHelper: MapLocationHelper = new MapLocationHelper();
 
   @Monitor('refreshFlag')
   onRefreshFlagChange(): void {
@@ -28,22 +31,23 @@ export struct CandidateContent {
   }
 
   aboutToAppear(): void {
+    const context = getContext(this) as common.UIAbilityContext;
+    this.locationHelper.requestLocationPermission(context);
+
     this.viewModel.loadData().then(() => {
       this.updateMarkers();
     });
-    this.mapOptions = {
-      position: {
-        target: {
-          latitude: 39.904,
-          longitude: 116.407
-        },
-        zoom: 10
-      }
-    };
+    this.mapOptions = createMapOptions(39.904, 116.407, 10);
     this.mapCallback = async (err: BusinessError | null, mapController: map.MapComponentController) => {
       if (!err) {
         this.mapController = mapController;
+        this.locationHelper.setMapController(mapController);
         this.updateMarkers();
+        // 定位成功后自动移动到用户位置
+        const state = this.locationHelper.getState();
+        if (state.hasCachedLocation) {
+          this.locationHelper.animateToCachedLocation();
+        }
         mapController.on('markerClick', (marker: map.Marker) => {
           const markerIndex: number = this.addedMarkers.indexOf(marker);
           if (markerIndex >= 0 && markerIndex < this.markerPropertyIds.length) {
@@ -154,9 +158,13 @@ export struct CandidateContent {
             }
             .width('100%')
 
-            MapComponent({ mapOptions: this.mapOptions, mapCallback: this.mapCallback, customInfoWindow: this.customInfoWindowBuilder })
-              .width('100%')
-              .layoutWeight(1)
+            Stack() {
+              MapComponent({ mapOptions: this.mapOptions, mapCallback: this.mapCallback, customInfoWindow: this.customInfoWindowBuilder })
+                .width('100%')
+                .height('100%')
+            }
+            .width('100%')
+            .layoutWeight(1)
           }
           .width('100%')
           .layoutWeight(1)

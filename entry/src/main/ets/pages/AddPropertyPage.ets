@@ -286,15 +286,15 @@ export struct AddPropertyPage {
                   .onChange((v: string) => { this.address = v })
 
                 Row() {
-                  SymbolGlyph($r('sys.symbol.map'))
-                    .fontSize(18)
-                    .fontColor([Colors.PRIMARY])
-                }
-                .width(40)
-                .height(40)
-                .backgroundColor(Colors.PRIMARY_LIGHT)
-                .borderRadius(8)
-                .justifyContent(FlexAlign.Center)
+                   SymbolGlyph($r('sys.symbol.map'))
+                     .fontSize(18)
+                     .fontColor([Colors.PRIMARY])
+                 }
+                 .width(40)
+                 .height(40)
+                 .backgroundColor(Colors.PRIMARY_LIGHT)
+                 .borderRadius(8)
+                 .justifyContent(FlexAlign.Center)
                 .onClick(() => {
                   this.navPathStack.pushPathByName('MapPicker', null, (popInfo: PopInfo) => {
                     if (popInfo.result) {
