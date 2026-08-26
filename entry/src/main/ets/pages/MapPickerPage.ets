@@ -173,7 +173,7 @@ export struct MapPickerPage {
       language: 'zh',
       radius: 200,
       isExtension: true,
-      isNearbyAoi: false
+      isNearbyAoi: true
     };
     site.reverseGeocode(params).then((result: site.ReverseGeocodeResult) => {
       this.selectedSiteName = '';
@@ -187,70 +187,84 @@ export struct MapPickerPage {
       const dist: string = ac ? this.extractDistrict(ac) : '';
       const twp: string = ac ? this.extractTownship(ac) : '';
 
+      const combinedPois: PoiItem[] = [];
+
       if (result.aois && result.aois.length > 0) {
-        this.selectedSiteName = result.aois[0].name ?? '';
+        for (const aoi of result.aois) {
+          const aoiName: string = aoi.name ?? '';
+          const aoiType: string = aoi.poiType ?? '';
+          if (aoiName.length === 0) {
+            continue;
+          }
+          const isRes: boolean = this.isResidentialPoi(aoiType, aoiName);
+          const item: PoiItem = new PoiItem();
+          item.name = aoiName;
+          item.poiType = aoiType;
+          item.address = '';
+          item.latitude = aoi.location?.latitude ?? 0;
+          item.longitude = aoi.location?.longitude ?? 0;
+          item.distance = aoi.distance ?? 0;
+          item.isResidential = isRes;
+          combinedPois.push(item);
+        }
+      }
+
+      if (result.pois && result.pois.length > 0) {
+        for (const poi of result.pois) {
+          const poiName: string = poi.name ?? '';
+          const poiType: string = poi.poiType ?? '';
+          const poiDistance: number = poi.distance ?? 0;
+          if (poiDistance > 250 || poiName.length === 0) {
+            continue;
+          }
+          const isRes: boolean = this.isResidentialPoi(poiType, poiName);
+          const item: PoiItem = new PoiItem();
+          item.name = poiName;
+          item.poiType = poiType;
+          item.address = poi.address ?? '';
+          item.latitude = poi.location?.latitude ?? 0;
+          item.longitude = poi.location?.longitude ?? 0;
+          item.distance = poiDistance;
+          item.isResidential = isRes;
+          combinedPois.push(item);
+        }
+      }
+
+      combinedPois.sort((a: PoiItem, b: PoiItem) => {
+        if (a.isResidential && !b.isResidential) {
+          return -1;
+        }
+        if (!a.isResidential && b.isResidential) {
+          return 1;
+        }
+        return a.distance - b.distance;
+      });
+
+      if (combinedPois.length > 0) {
+        this.poiList = combinedPois;
+        this.showPoiSheet = combinedPois.length > 1;
+
+        const firstPoi: PoiItem = combinedPois[0];
+        this.selectedSiteName = firstPoi.name;
         this.district = dist;
         this.township = twp;
         this.fallbackTip = '';
       } else {
-        const parsedPois: PoiItem[] = [];
-        if (result.pois && result.pois.length > 0) {
-          for (const poi of result.pois) {
-            const poiName: string = poi.name ?? '';
-            const poiType: string = poi.poiType ?? '';
-            const poiDistance: number = poi.distance ?? 0;
-            if (poiDistance > 250) {
-              continue;
-            }
-            const isRes: boolean = this.isResidentialPoi(poiType, poiName);
-            const item: PoiItem = new PoiItem();
-            item.name = poiName;
-            item.poiType = poiType;
-            item.address = poi.address ?? '';
-            item.latitude = poi.location?.latitude ?? 0;
-            item.longitude = poi.location?.longitude ?? 0;
-            item.distance = poiDistance;
-            item.isResidential = isRes;
-            parsedPois.push(item);
-          }
+        let communityName: string = '';
+        if (ac && ac.neighborhoods && ac.neighborhoods.length > 0) {
+          communityName = ac.neighborhoods[0] ?? '';
         }
 
-        parsedPois.sort((a: PoiItem, b: PoiItem) => {
-          if (a.isResidential && !b.isResidential) {
-            return -1;
-          }
-          if (!a.isResidential && b.isResidential) {
-            return 1;
-          }
-          return a.distance - b.distance;
-        });
-
-        if (parsedPois.length > 0) {
-          this.poiList = parsedPois;
-          this.showPoiSheet = true;
-
-          const firstPoi: PoiItem = parsedPois[0];
-          this.selectedSiteName = firstPoi.name;
+        if (communityName.length > 0) {
+          this.selectedSiteName = communityName;
+          this.district = dist;
+          this.township = twp;
+          this.fallbackTip = '未识别小区，取自社区信息，请核对';
+        } else {
+          this.selectedSiteName = '';
           this.district = dist;
           this.township = twp;
           this.fallbackTip = '';
-        } else {
-          let communityName: string = '';
-          if (ac && ac.neighborhoods && ac.neighborhoods.length > 0) {
-            communityName = ac.neighborhoods[0] ?? '';
-          }
-
-          if (communityName.length > 0) {
-            this.selectedSiteName = communityName;
-            this.district = dist;
-            this.township = twp;
-            this.fallbackTip = '未识别小区，取自社区信息，请核对';
-          } else {
-            this.selectedSiteName = '';
-            this.district = dist;
-            this.township = twp;
-            this.fallbackTip = '';
-          }
         }
       }
     }).catch(() => {
@@ -358,6 +372,9 @@ export struct MapPickerPage {
       .padding({ left: Spacing.CARD_PADDING_SM, right: Spacing.CARD_PADDING_SM, top: 12, bottom: 12 })
       .alignItems(VerticalAlign.Center)
     }
+    .onClick(() => {
+      this.onPoiSelected(poi);
+    })
   }
 
   build() {
