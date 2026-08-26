@@ -3,6 +3,8 @@ import { AppInfo } from '../common/AppInfo';
 import { MenuItemRow } from '../components/MenuItemRow';
 import { UserProfile } from '../model/PropertyModel';
 import { PropertyRepository } from '../repository/PropertyRepository';
+import { formProvider, formInfo } from '@kit.FormKit';
+import { Want, common } from '@kit.AbilityKit';
 
 @ComponentV2
 export struct MyContent {
@@ -53,8 +55,21 @@ export struct MyContent {
   }
 
   private addWidgetToDesktop(): void {
-    // requestPublishForm 需要 API 18+，当前 SDK 不支持，直接引导手动添加
-    this.showManualAddGuide();
+    try {
+      const context: common.UIAbilityContext = getContext(this) as common.UIAbilityContext;
+      const want: Want = {
+        bundleName: context.abilityInfo.bundleName,
+        abilityName: 'EntryFormAbility',
+        parameters: {
+          'ohos.extra.param.key.module_name': 'entry',
+          'ohos.extra.param.key.form_name': 'RentWidget',
+          'ohos.extra.param.key.form_dimension': formInfo.FormDimension.Dimension_2_4 as Object,
+        }
+      };
+      formProvider.openFormManager(want);
+    } catch (_e) {
+      this.showManualAddGuide();
+    }
   }
 
   private showManualAddGuide(): void {

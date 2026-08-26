@@ -1,6 +1,9 @@
 import { Colors, Fonts, FontSizes, Dimensions, Radius, Shadows, Spacing, getTagTextColor, getTagBgColor } from '../common/DesignTokens';
 import { PropertyInfo, PropertyIdParam } from '../model/PropertyModel';
 import { HomeViewModel } from '../viewmodel/HomeViewModel';
+import { formProvider, formInfo } from '@kit.FormKit';
+import { Want, common } from '@kit.AbilityKit';
+import { preferences } from '@kit.ArkData';
 
 
 @ComponentV2
@@ -8,6 +11,7 @@ export struct HomeContent {
   @Local viewModel: HomeViewModel = new HomeViewModel();
   @Consumer('navPathStack') navPathStack: NavPathStack = new NavPathStack();
   @Consumer('refreshFlag') refreshFlag: number = 0;
+  @Local showWidgetTip: boolean = false;
 
   @Monitor('refreshFlag')
   onRefreshFlagChange(): void {
@@ -16,6 +20,54 @@ export struct HomeContent {
 
   aboutToAppear(): void {
     this.viewModel.loadData();
+    this.checkWidgetTip();
+  }
+
+  private async checkWidgetTip(): Promise<void> {
+    try {
+      const context: common.UIAbilityContext = getContext(this) as common.UIAbilityContext;
+      const prefs: preferences.Preferences = preferences.getPreferencesSync(context, { name: 'RentNotePrefs' });
+      const dismissed: boolean = prefs.getSync('widget_tip_dismissed', false) as boolean;
+      if (dismissed) {
+        this.showWidgetTip = false;
+        return;
+      }
+      const forms: Array<formInfo.FormInfo> = await formProvider.getPublishedFormInfos();
+      this.showWidgetTip = forms.length === 0;
+    } catch (_e) {
+      const context: common.UIAbilityContext = getContext(this) as common.UIAbilityContext;
+      const prefs: preferences.Preferences = preferences.getPreferencesSync(context, { name: 'RentNotePrefs' });
+      const dismissed: boolean = prefs.getSync('widget_tip_dismissed', false) as boolean;
+      this.showWidgetTip = !dismissed;
+    }
+  }
+
+  private async dismissWidgetTip(): Promise<void> {
+    this.showWidgetTip = false;
+    try {
+      const context: common.UIAbilityContext = getContext(this) as common.UIAbilityContext;
+      const prefs: preferences.Preferences = preferences.getPreferencesSync(context, { name: 'RentNotePrefs' });
+      prefs.putSync('widget_tip_dismissed', true);
+      await prefs.flush();
+    } catch (_e) {
+    }
+  }
+
+  private addWidgetFromTip(): void {
+    try {
+      const context: common.UIAbilityContext = getContext(this) as common.UIAbilityContext;
+      const want: Want = {
+        bundleName: context.abilityInfo.bundleName,
+        abilityName: 'EntryFormAbility',
+        parameters: {
+          'ohos.extra.param.key.module_name': 'entry',
+          'ohos.extra.param.key.form_name': 'RentWidget',
+          'ohos.extra.param.key.form_dimension': formInfo.FormDimension.Dimension_2_4 as Object,
+        }
+      };
+      formProvider.openFormManager(want);
+    } catch (_e) {
+    }
   }
 
   private getDaysRemaining(endDate: string): number {
@@ -151,6 +203,47 @@ export struct HomeContent {
         .width('100%')
         .height(Dimensions.HEADER_HEIGHT)
         .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
+
+        if (this.showWidgetTip) {
+          Row() {
+            SymbolGlyph($r('sys.symbol.square_grid_2x2'))
+              .fontSize(20)
+              .fontColor([Colors.PRIMARY])
+
+            Text('添加桌面小组件，实时查看租金与到期提醒')
+              .fontSize(FontSizes.BODY_SMALL)
+              .fontColor(Colors.TEXT_SECONDARY)
+              .fontFamily(Fonts.CN)
+              .layoutWeight(1)
+              .margin({ left: 8 })
+
+            Text('添加')
+              .fontSize(FontSizes.CAPTION)
+              .fontColor(Colors.PRIMARY)
+              .fontFamily(Fonts.CN)
+              .fontWeight(FontWeight.Medium)
+              .padding({ left: 10, right: 10, top: 4, bottom: 4 })
+              .backgroundColor(Colors.PRIMARY_LIGHT)
+              .borderRadius(Radius.TAG)
+              .onClick(() => {
+                this.addWidgetFromTip();
+              })
+
+            SymbolGlyph($r('sys.symbol.xmark'))
+              .fontSize(14)
+              .fontColor([Colors.TEXT_MUTED])
+              .margin({ left: 8 })
+              .onClick(() => {
+                this.dismissWidgetTip();
+              })
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center)
+          .padding({ left: 16, right: 12, top: 10, bottom: 10 })
+          .backgroundColor(Colors.PRIMARY_LIGHT)
+          .borderRadius(Radius.CARD_SM)
+          .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
+        }
 
         if (this.viewModel.rentingProperties.length === 0) {
           this.EmptyState()
