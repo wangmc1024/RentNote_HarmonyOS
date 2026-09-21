@@ -56,10 +56,6 @@ export class AddPropertyViewModel {
         data.status = 'candidate';
       } else {
         data.status = 'renting';
-        const renting: PropertyInfo[] = this.repository.getRentingProperties();
-        for (const p of renting) {
-          await this.repository.demoteRenting(p.id);
-        }
       }
       await this.repository.addProperty(data);
     }

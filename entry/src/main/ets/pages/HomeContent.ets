@@ -13,11 +13,6 @@ export struct HomeContent {
   @Consumer('refreshFlag') refreshFlag: number = 0;
   @Local showWidgetTip: boolean = false;
 
-  @Monitor('refreshFlag')
-  onRefreshFlagChange(): void {
-    this.viewModel.refreshFromRepository();
-  }
-
   aboutToAppear(): void {
     this.viewModel.loadData();
     this.checkWidgetTip();
@@ -168,17 +163,13 @@ export struct HomeContent {
     return p.startDate.length > 0 && p.endDate.length > 0;
   }
 
-  private showDemoteDialog(): void {
-    if (this.viewModel.rentingProperties.length === 0) {
-      return;
-    }
-    const property: PropertyInfo = this.viewModel.rentingProperties[0];
+  private showDemoteDialog(propertyId: string): void {
     this.getUIContext().showAlertDialog({
       message: '取消选定后，该房源将退回备选列表，租期信息将被清除。',
       primaryButton: {
         value: '确认取消',
         action: () => {
-          this.viewModel.demoteRenting(property.id).then(() => {
+          this.viewModel.demoteRenting(propertyId).then(() => {
             this.refreshFlag++;
           });
         }
@@ -378,28 +369,32 @@ export struct HomeContent {
   @Builder
   RentingState() {
     Column() {
-      List() {
-        ListItem() {
-          this.RentingCardContent()
-        }
-        .swipeAction({ end: { builder: () => { this.SwipeDemoteBuilder() } } })
+      List({ space: 16 }) {
+        ForEach(this.viewModel.rentingProperties, (property: PropertyInfo) => {
+          ListItem() {
+            Column() {
+              this.RentingCardContent(property)
+
+              if (this.hasLeaseInfo(property)) {
+                this.LeaseProgressCard(property)
+                this.CountdownCard(property)
+              }
+            }
+          }
+          .swipeAction({ end: { builder: () => { this.SwipeDemoteBuilder(property.id) } } })
+        }, (item: PropertyInfo) => item.id + '_' + this.viewModel.dataVersion.toString())
       }
       .scrollBar(BarState.Off)
       .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
-
-      if (this.hasLeaseInfo(this.viewModel.rentingProperties[0])) {
-        this.LeaseProgressCard()
-        this.CountdownCard()
-      }
     }
   }
 
   @Builder
-  RentingCardContent() {
+  RentingCardContent(property: PropertyInfo) {
     Column() {
       Row() {
-        if (this.viewModel.rentingProperties[0].getFirstImage().length > 0) {
-          Image(this.viewModel.rentingProperties[0].getFirstImage())
+        if (property.getFirstImage().length > 0) {
+          Image(property.getFirstImage())
             .width(56)
             .height(56)
             .objectFit(ImageFit.Cover)
@@ -418,7 +413,7 @@ export struct HomeContent {
         }
 
         Column() {
-          Text(this.viewModel.rentingProperties[0].name)
+          Text(property.name)
             .fontSize(FontSizes.TITLE_LARGE)
             .fontColor(Colors.TEXT_PRIMARY)
             .fontFamily(Fonts.CN)
@@ -426,8 +421,8 @@ export struct HomeContent {
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
 
-          if (this.viewModel.rentingProperties[0].address.length > 0) {
-            Text(this.viewModel.rentingProperties[0].address)
+          if (property.address.length > 0) {
+            Text(property.address)
               .fontSize(FontSizes.BODY_SMALL)
               .fontColor(Colors.TEXT_SECONDARY)
               .fontFamily(Fonts.CN)
@@ -439,14 +434,14 @@ export struct HomeContent {
         .layoutWeight(1)
         .margin({ left: 16 })
 
-        if (this.viewModel.rentingProperties[0].renewalStatus.length > 0) {
-          Text(this.getRenewalLabel(this.viewModel.rentingProperties[0].renewalStatus))
+        if (property.renewalStatus.length > 0) {
+          Text(this.getRenewalLabel(property.renewalStatus))
             .fontSize(FontSizes.CAPTION)
-            .fontColor(this.getRenewalColor(this.viewModel.rentingProperties[0].renewalStatus))
+            .fontColor(this.getRenewalColor(property.renewalStatus))
             .fontFamily(Fonts.CN)
             .fontWeight(FontWeight.Medium)
             .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-            .backgroundColor(this.getRenewalBgColor(this.viewModel.rentingProperties[0].renewalStatus))
+            .backgroundColor(this.getRenewalBgColor(property.renewalStatus))
             .borderRadius(Radius.TAG)
         }
       }
@@ -460,7 +455,7 @@ export struct HomeContent {
             .fontColor(Colors.TEXT_MUTED)
             .fontFamily(Fonts.CN)
 
-          Text('¥' + this.viewModel.rentingProperties[0].monthlyRent.toLocaleString())
+          Text('¥' + property.monthlyRent.toLocaleString())
             .fontSize(28)
             .fontColor(Colors.PRIMARY)
             .fontFamily(Fonts.NUMBER)
@@ -477,7 +472,7 @@ export struct HomeContent {
             .fontColor(Colors.TEXT_MUTED)
             .fontFamily(Fonts.CN)
 
-          Text('¥' + this.viewModel.rentingProperties[0].deposit.toLocaleString())
+          Text('¥' + property.deposit.toLocaleString())
             .fontSize(28)
             .fontColor(Colors.TEXT_SECONDARY)
             .fontFamily(Fonts.NUMBER)
@@ -489,9 +484,9 @@ export struct HomeContent {
       .width('100%')
       .margin({ top: 20, left: 8, right: 8 })
 
-      if (this.viewModel.rentingProperties[0].tags.length > 0) {
+      if (property.tags.length > 0) {
         Flex({ wrap: FlexWrap.Wrap }) {
-          ForEach(this.viewModel.rentingProperties[0].tags, (tag: string) => {
+          ForEach(property.tags, (tag: string) => {
             Text(tag)
               .fontSize(FontSizes.CAPTION)
               .fontColor(getTagTextColor(tag))
@@ -507,8 +502,8 @@ export struct HomeContent {
         .margin({ top: 12 })
       }
 
-      if (this.viewModel.rentingProperties[0].notes.length > 0) {
-        Text(this.viewModel.rentingProperties[0].notes)
+      if (property.notes.length > 0) {
+        Text(property.notes)
           .fontSize(FontSizes.CAPTION)
           .fontColor(Colors.TEXT_MUTED)
           .fontFamily(Fonts.CN)
@@ -531,13 +526,13 @@ export struct HomeContent {
     .margin({ top: 4 })
     .onClick(() => {
       const detailParam: PropertyIdParam = new PropertyIdParam();
-      detailParam.propertyId = this.viewModel.rentingProperties[0].id;
+      detailParam.propertyId = property.id;
       this.navPathStack.pushPathByName('PropertyDetail', detailParam);
     })
   }
 
   @Builder
-  SwipeDemoteBuilder() {
+  SwipeDemoteBuilder(propertyId: string) {
     Row() {
       Column() {
         SymbolGlyph($r('sys.symbol.xmark_circle'))
@@ -556,13 +551,13 @@ export struct HomeContent {
       .justifyContent(FlexAlign.Center)
       .backgroundColor(Colors.WARNING)
       .onClick(() => {
-        this.showDemoteDialog();
+        this.showDemoteDialog(propertyId);
       })
     }
   }
 
   @Builder
-  LeaseProgressCard() {
+  LeaseProgressCard(property: PropertyInfo) {
     Column() {
       Row() {
         Text('租期进度')
@@ -573,10 +568,8 @@ export struct HomeContent {
 
         Blank()
 
-        Text(this.getElapsedDays(this.viewModel.rentingProperties[0].startDate,
-          this.viewModel.rentingProperties[0].endDate) + ' / ' +
-          this.getTotalDays(this.viewModel.rentingProperties[0].startDate,
-            this.viewModel.rentingProperties[0].endDate) + ' 天')
+        Text(this.getElapsedDays(property.startDate, property.endDate) + ' / ' +
+          this.getTotalDays(property.startDate, property.endDate) + ' 天')
           .fontSize(FontSizes.CAPTION)
           .fontColor(Colors.TEXT_MUTED)
           .fontFamily(Fonts.NUMBER)
@@ -585,30 +578,29 @@ export struct HomeContent {
       .margin({ bottom: 12 })
 
       Progress({
-        value: this.getLeaseProgress(this.viewModel.rentingProperties[0].startDate,
-          this.viewModel.rentingProperties[0].endDate),
+        value: this.getLeaseProgress(property.startDate, property.endDate),
         total: 100,
         type: ProgressType.Linear
       })
         .width('100%')
         .height(12)
-        .color(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) <= 30 ?
+        .color(this.getDaysRemaining(property.endDate) <= 30 ?
           Colors.WARNING : Colors.PRIMARY)
-        .backgroundColor(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) <= 30 ?
+        .backgroundColor(this.getDaysRemaining(property.endDate) <= 30 ?
           Colors.WARNING_LIGHT : Colors.PRIMARY_LIGHT)
         .style({ strokeWidth: 12 })
 
       Row() {
-        Text(this.viewModel.rentingProperties[0].startDate)
+        Text(property.startDate)
           .fontSize(10)
           .fontColor(Colors.TEXT_MUTED)
           .fontFamily(Fonts.NUMBER)
 
         Blank()
 
-        Text(this.viewModel.rentingProperties[0].endDate)
+        Text(property.endDate)
           .fontSize(10)
-          .fontColor(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) <= 30 ?
+          .fontColor(this.getDaysRemaining(property.endDate) <= 30 ?
             Colors.WARNING : Colors.TEXT_MUTED)
           .fontFamily(Fonts.NUMBER)
       }
@@ -625,33 +617,33 @@ export struct HomeContent {
       offsetX: Shadows.CARD.offsetX,
       offsetY: Shadows.CARD.offsetY
     })
-    .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
+    .margin({ top: Spacing.ITEM_GAP })
   }
 
   @Builder
-  CountdownCard() {
+  CountdownCard(property: PropertyInfo) {
     Column() {
-      Text(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) < 0 ? '已过期' : '到期倒计时')
+      Text(this.getDaysRemaining(property.endDate) < 0 ? '已过期' : '到期倒计时')
         .fontSize(FontSizes.CAPTION)
         .fontColor(Colors.TEXT_MUTED)
         .fontFamily(Fonts.CN)
 
       Row() {
-        Text(Math.abs(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate)).toString())
+        Text(Math.abs(this.getDaysRemaining(property.endDate)).toString())
           .fontSize(56)
-          .fontColor(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) < 0 ?
+          .fontColor(this.getDaysRemaining(property.endDate) < 0 ?
             Colors.DANGER :
-            this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) <= 30 ?
+            this.getDaysRemaining(property.endDate) <= 30 ?
               Colors.WARNING : Colors.PRIMARY)
           .fontFamily(Fonts.NUMBER)
           .fontWeight(FontWeight.Bold)
 
-        Text(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) < 0 ?
+        Text(this.getDaysRemaining(property.endDate) < 0 ?
           '天前到期' : '天')
           .fontSize(FontSizes.BODY_LARGE)
-          .fontColor(this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) < 0 ?
+          .fontColor(this.getDaysRemaining(property.endDate) < 0 ?
             Colors.DANGER :
-            this.getDaysRemaining(this.viewModel.rentingProperties[0].endDate) <= 30 ?
+            this.getDaysRemaining(property.endDate) <= 30 ?
               Colors.WARNING : Colors.TEXT_SECONDARY)
           .fontFamily(Fonts.CN)
           .fontWeight(FontWeight.Medium)
@@ -671,6 +663,6 @@ export struct HomeContent {
       offsetX: Shadows.CARD.offsetX,
       offsetY: Shadows.CARD.offsetY
     })
-    .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: Spacing.ITEM_GAP })
+    .margin({ top: Spacing.ITEM_GAP })
   }
 }

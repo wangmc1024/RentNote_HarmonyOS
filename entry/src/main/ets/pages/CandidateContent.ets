@@ -26,7 +26,6 @@ export struct CandidateContent {
 
   @Monitor('refreshFlag')
   onRefreshFlagChange(): void {
-    this.viewModel.refreshFromRepository();
     this.updateMarkers();
   }
 
@@ -102,10 +101,6 @@ export struct CandidateContent {
 
   private hasGeoProperties(): boolean {
     return this.viewModel.candidateProperties.some((p: PropertyInfo) => p.latitude !== 0 && p.longitude !== 0);
-  }
-
-  private hasRentingProperty(): boolean {
-    return this.viewModel.rentingProperties.length > 0;
   }
 
   private getPropertyById(id: string): PropertyInfo | null {
@@ -336,7 +331,7 @@ export struct CandidateContent {
                         this.candidateSwipeAction(property.id)
                       }
                     } })
-                  }, (item: PropertyInfo) => item.id)
+                  }, (item: PropertyInfo) => item.id + '_' + this.viewModel.dataVersion.toString())
                 }
                 .width('100%')
                 .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
@@ -345,13 +340,13 @@ export struct CandidateContent {
                 .scrollBar(BarState.Off)
                 .nestedScroll({ scrollForward: NestedScrollMode.PARENT_FIRST, scrollBackward: NestedScrollMode.SELF_FIRST })
 
-                if (!this.hasRentingProperty()) {
+                if (this.viewModel.candidateProperties.length > 0) {
                   Row() {
                     SymbolGlyph($r('sys.symbol.lightbulb'))
                       .fontSize(14)
                       .fontColor([Colors.PRIMARY])
 
-                    Text('左滑备选卡片可「选定」为在租房源')
+                    Text('左滑备选卡片可「选定」为在租房源，支持多套同时选定')
                       .fontSize(FontSizes.CAPTION)
                       .fontColor(Colors.PRIMARY)
                       .fontFamily(Fonts.CN)
@@ -536,11 +531,10 @@ export struct CandidateContent {
         .fontColor(Colors.TEXT_WHITE)
         .fontFamily(Fonts.CN)
         .fontWeight(FontWeight.Medium)
-        .backgroundColor(this.hasRentingProperty() ? Colors.DIVIDER_DARK : Colors.SUCCESS)
+        .backgroundColor(Colors.SUCCESS)
         .borderRadius(0)
         .height('100%')
         .width(72)
-        .enabled(!this.hasRentingProperty())
         .onClick(() => {
           this.viewModel.promoteCandidate(propertyId).then(() => {
             this.refreshFlag++;

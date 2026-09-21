@@ -20,6 +20,7 @@ const DATA_VERSION: number = 4;
 @ObservedV2
 export class PropertyRepository {
   @Trace properties: PropertyInfo[] = [];
+  @Trace dataVersion: number = 0;
   private prefs: preferences.Preferences | null = null;
   private static instance: PropertyRepository | null = null;
   private initContext: Context | null = null;
@@ -213,6 +214,7 @@ export class PropertyRepository {
       property.id = Date.now().toString();
     }
     this.properties = [...this.properties, property];
+    this.dataVersion++;
     await this.saveToPrefs();
     this.notifyWidgetUpdate();
     this.refreshReminders();
@@ -239,6 +241,7 @@ export class PropertyRepository {
       const newList: PropertyInfo[] = [...this.properties];
       newList[index] = property;
       this.properties = newList;
+      this.dataVersion++;
       await this.saveToPrefs();
       this.notifyWidgetUpdate();
       this.refreshReminders();
@@ -251,6 +254,7 @@ export class PropertyRepository {
       this.deleteImageFiles(target);
     }
     this.properties = this.properties.filter((item: PropertyInfo) => item.id !== id);
+    this.dataVersion++;
     await this.saveToPrefs();
     this.notifyWidgetUpdate();
     this.refreshReminders();
@@ -269,28 +273,17 @@ export class PropertyRepository {
   async promoteCandidate(id: string): Promise<void> {
     hilog.info(0, TAG, 'promoteCandidate: id=' + id + ' total=' + this.properties.length);
     const targetIndex: number = this.properties.findIndex((item: PropertyInfo) => item.id === id);
-    hilog.info(0, TAG, 'promoteCandidate: findIndex=' + targetIndex);
     if (targetIndex < 0) {
       hilog.error(0, TAG, 'promoteCandidate: id not found in list!');
       return;
     }
     const newList: PropertyInfo[] = [...this.properties];
-    for (let i: number = 0; i < newList.length; i++) {
-      if (newList[i].status === 'renting' || newList[i].status === 'expiring') {
-        hilog.info(0, TAG, 'promoteCandidate: demoting existing renting id=' + newList[i].id);
-        const demoted: PropertyInfo = newList[i].clone();
-        demoted.status = 'candidate';
-        demoted.startDate = '';
-        demoted.endDate = '';
-        demoted.renewalStatus = '';
-        newList[i] = demoted;
-      }
-    }
     const promoted: PropertyInfo = newList[targetIndex].clone();
     promoted.status = 'renting';
     newList[targetIndex] = promoted;
     hilog.info(0, TAG, 'promoteCandidate: promoted id=' + id + ' status=' + newList[targetIndex].status);
     this.properties = newList;
+    this.dataVersion++;
     await this.saveToPrefs();
     this.notifyWidgetUpdate();
     this.refreshReminders();
@@ -311,6 +304,7 @@ export class PropertyRepository {
       demoted.renewalStatus = '';
       newList[index] = demoted;
       this.properties = newList;
+      this.dataVersion++;
       await this.saveToPrefs();
       this.notifyWidgetUpdate();
       this.refreshReminders();
@@ -329,6 +323,7 @@ export class PropertyRepository {
       }
       newList[index] = updated;
       this.properties = newList;
+      this.dataVersion++;
       await this.saveToPrefs();
       this.notifyWidgetUpdate();
       this.refreshReminders();
@@ -354,6 +349,7 @@ export class PropertyRepository {
     }
     if (needSave) {
       this.properties = newList;
+      this.dataVersion++;
       await this.saveToPrefs();
       this.notifyWidgetUpdate();
       this.refreshReminders();
@@ -365,6 +361,7 @@ export class PropertyRepository {
       this.deleteImageFiles(p);
     }
     this.properties = [];
+    this.dataVersion++;
     this.safePutSync(KEY_USER_PROFILE, '');
     await this.saveToPrefs();
     this.notifyWidgetUpdate();
@@ -497,7 +494,6 @@ export class PropertyRepository {
       for (const p of this.properties) {
         existingIds.add(p.id);
       }
-      let hasRentingImport: boolean = false;
       for (const rawObj of rawList) {
         const raw: Record<string, Object> = rawObj as Record<string, Object>;
         const name: string = (raw['name'] as string) ?? '';
@@ -555,9 +551,6 @@ export class PropertyRepository {
             if (lastBillsResetMonth.length > 0) {
               updated.lastBillsResetMonth = lastBillsResetMonth;
             }
-            if (updated.status === 'renting' || updated.status === 'expiring') {
-              hasRentingImport = true;
-            }
             const newList: PropertyInfo[] = [...this.properties];
             newList[existIdx] = updated;
             this.properties = newList;
@@ -584,33 +577,12 @@ export class PropertyRepository {
         p.latitude = (raw['latitude'] as number) ?? 0;
         p.longitude = (raw['longitude'] as number) ?? 0;
         p.lastBillsResetMonth = (raw['lastBillsResetMonth'] as string) ?? '';
-        if (p.status === 'renting' || p.status === 'expiring') {
-          hasRentingImport = true;
-        }
         this.properties = [...this.properties, p];
         existingIds.add(p.id);
         result.imported++;
       }
       if (result.imported > 0 || result.updated > 0) {
-        if (hasRentingImport) {
-          const rentingList: PropertyInfo[] = this.getRentingProperties();
-          if (rentingList.length > 1) {
-            const toDemote: PropertyInfo[] = rentingList.slice(0, rentingList.length - 1);
-            for (const r of toDemote) {
-              const idx: number = this.properties.findIndex((item: PropertyInfo) => item.id === r.id);
-              if (idx >= 0) {
-                const d: PropertyInfo = this.properties[idx].clone();
-                d.status = 'candidate';
-                d.startDate = '';
-                d.endDate = '';
-                d.renewalStatus = '';
-                const newList: PropertyInfo[] = [...this.properties];
-                newList[idx] = d;
-                this.properties = newList;
-              }
-            }
-          }
-        }
+        this.dataVersion++;
         await this.saveToPrefs();
         this.notifyWidgetUpdate();
       }
