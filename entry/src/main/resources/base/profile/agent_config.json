@@ -1,0 +1,76 @@
+{
+  "agentCards": [
+    {
+      "agentId": "rentnote_agent_001",
+      "name": "小寓租务助手",
+      "description": "读取小寓台账已存储的房源与租约数据，返回在租数量、平均租金、即将到期租约并给出收租续约建议；支持查询备选房源列表；支持将新房源信息自动写入台账（备选或在租）；支持按名称删除房源记录",
+      "version": "1.1.0",
+      "defaultInputModes": ["application/json"],
+      "defaultOutputModes": ["application/json", "text/plain"],
+      "skills": [
+        {
+          "id": "query_rental_overview",
+          "name": "查询租约概况",
+          "description": "读取应用内已存储的房源数据，返回在租数量、平均租金、即将到期租约列表（含剩余天数），并据此生成收租与续约建议。请求params为空对象",
+          "tags": ["租约", "到期", "租金", "建议", "查询", "收租"],
+          "examples": [
+            "我的房子哪些快到期了",
+            "帮我看看现在的收租情况",
+            "最近有什么租约需要处理"
+          ],
+          "inputModes": ["application/json"],
+          "outputModes": ["application/json"],
+          "extension": "{}"
+        },
+        {
+          "id": "add_property",
+          "name": "记录房源",
+          "description": "将用户提供的新房源信息自动写入小寓台账。params必填name（房源名称），可选address、district、monthlyRent（月租，数字）、deposit（押金，数字）、startDate/endDate（日期，格式YYYY.MM.DD）、notes（备注）、status（默认candidate存入备选；用户明确说是租约/在租时传renting，直接记为在租）",
+          "tags": ["新增房源", "记账", "添加", "录入", "房租"],
+          "examples": [
+            "帮我记一套房：阳光小区2栋301，月租2500，押金5000",
+            "新增房源：幸福花园5栋802，2027.06.30到期",
+            "新增租约：万科城3栋501，2026.10.01到2027.09.30，月租3200"
+          ],
+          "inputModes": ["application/json"],
+          "outputModes": ["application/json"],
+          "extension": "{\"params\":{\"name\":\"string，房源名称，必填\",\"address\":\"string，地址\",\"district\":\"string，区域\",\"monthlyRent\":\"number，月租\",\"deposit\":\"number，押金\",\"startDate\":\"string，起租日期YYYY.MM.DD\",\"endDate\":\"string，到期日期YYYY.MM.DD\",\"notes\":\"string，备注\",\"status\":\"string，candidate存入备选（默认）或renting直接记为在租\"}}"
+        },
+        {
+          "id": "query_candidate_properties",
+          "name": "查询备选房源",
+          "description": "读取应用内备选房源列表，返回每套房源的名称、地址、区域、月租与备注，以及备选总数。请求params为空对象",
+          "tags": ["备选", "候选", "看房", "找房", "查询"],
+          "examples": [
+            "我记录了哪些备选房源",
+            "帮我看看备选的房子",
+            "我看过哪些房了"
+          ],
+          "inputModes": ["application/json"],
+          "outputModes": ["application/json"],
+          "extension": "{}"
+        },
+        {
+          "id": "delete_property",
+          "name": "删除房源",
+          "description": "按房源名称删除台账中的记录。params必填name（房源名称，与台账中的名称一致或包含即可），可选status（candidate备选或renting在租，同名多套时用于区分）。若匹配到多套，会返回匹配列表，需用户明确后再调用",
+          "tags": ["删除", "移除", "清理", "房源"],
+          "examples": [
+            "把阳光小区2栋301删了",
+            "删除备选里的幸福花园那套"
+          ],
+          "inputModes": ["application/json"],
+          "outputModes": ["application/json"],
+          "extension": "{\"params\":{\"name\":\"string，房源名称，必填\",\"status\":\"string，candidate或renting，可选\"}}"
+        }
+      ],
+      "iconUrl": "common/app_icon.png",
+      "category": "finance",
+      "type": "ATOMIC_SERVICE",
+      "extension": "{\"greeting\":\"你好，我是小寓租务助手，可以帮你查看租约概况、查询备选房源、记录新房源或删除记录\"}",
+      "appInfo": {
+        "deviceTypes": ["phone", "tablet"]
+      }
+    }
+  ]
+}

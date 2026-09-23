@@ -36,6 +36,10 @@ export class PropertyRepository {
   constructor() {
   }
 
+  getContext(): Context | null {
+    return this.initContext;
+  }
+
   private safeGetSync(key: string, defaultValue: Object): Object {
     try {
       return this.prefs!.getSync(key, defaultValue);

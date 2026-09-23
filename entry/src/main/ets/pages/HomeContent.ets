@@ -20,17 +20,17 @@ export struct HomeContent {
 
   private async checkWidgetTip(): Promise<void> {
     try {
-      const context: common.UIAbilityContext = getContext(this) as common.UIAbilityContext;
+      const context: common.UIAbilityContext = this.getUIContext().getHostContext() as common.UIAbilityContext;
       const prefs: preferences.Preferences = preferences.getPreferencesSync(context, { name: 'RentNotePrefs' });
       const dismissed: boolean = prefs.getSync('widget_tip_dismissed', false) as boolean;
       if (dismissed) {
         this.showWidgetTip = false;
         return;
       }
-      const forms: Array<formInfo.FormInfo> = await formProvider.getPublishedFormInfos();
+      const forms: Array<formInfo.RunningFormInfo> = await formProvider.getPublishedRunningFormInfos();
       this.showWidgetTip = forms.length === 0;
     } catch (_e) {
-      const context: common.UIAbilityContext = getContext(this) as common.UIAbilityContext;
+      const context: common.UIAbilityContext = this.getUIContext().getHostContext() as common.UIAbilityContext;
       const prefs: preferences.Preferences = preferences.getPreferencesSync(context, { name: 'RentNotePrefs' });
       const dismissed: boolean = prefs.getSync('widget_tip_dismissed', false) as boolean;
       this.showWidgetTip = !dismissed;
@@ -40,7 +40,7 @@ export struct HomeContent {
   private async dismissWidgetTip(): Promise<void> {
     this.showWidgetTip = false;
     try {
-      const context: common.UIAbilityContext = getContext(this) as common.UIAbilityContext;
+      const context: common.UIAbilityContext = this.getUIContext().getHostContext() as common.UIAbilityContext;
       const prefs: preferences.Preferences = preferences.getPreferencesSync(context, { name: 'RentNotePrefs' });
       prefs.putSync('widget_tip_dismissed', true);
       await prefs.flush();
@@ -50,7 +50,7 @@ export struct HomeContent {
 
   private addWidgetFromTip(): void {
     try {
-      const context: common.UIAbilityContext = getContext(this) as common.UIAbilityContext;
+      const context: common.UIAbilityContext = this.getUIContext().getHostContext() as common.UIAbilityContext;
       const want: Want = {
         bundleName: context.abilityInfo.bundleName,
         abilityName: 'EntryFormAbility',

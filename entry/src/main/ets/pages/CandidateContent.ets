@@ -30,7 +30,7 @@ export struct CandidateContent {
   }
 
   aboutToAppear(): void {
-    const context = getContext(this) as common.UIAbilityContext;
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
     this.locationHelper.requestLocationPermission(context);
 
     this.viewModel.loadData().then(() => {

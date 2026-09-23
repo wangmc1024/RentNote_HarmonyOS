@@ -1,10 +1,16 @@
 import { Colors, Fonts, FontSizes, Dimensions, Radius, Shadows, Spacing } from '../common/DesignTokens';
 import { AppInfo } from '../common/AppInfo';
+import { AgentConfig } from '../common/AgentConfig';
 import { MenuItemRow } from '../components/MenuItemRow';
 import { UserProfile } from '../model/PropertyModel';
 import { PropertyRepository } from '../repository/PropertyRepository';
 import { formProvider, formInfo } from '@kit.FormKit';
 import { Want, common } from '@kit.AbilityKit';
+import { FunctionComponent, FunctionController, FunctionOptions } from '@kit.AgentFrameworkKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+const TAG: string = 'MyContent';
 
 @ComponentV2
 export struct MyContent {
@@ -12,10 +18,17 @@ export struct MyContent {
   @Local userSubtitle: string = '';
   @Local avatarUri: string = '';
   @Local dataSize: string = '0.00 MB';
+  @Local isAgentSupport: boolean = false;
   @Consumer('navPathStack') navPathStack: NavPathStack = new NavPathStack();
   @Consumer('refreshFlag') refreshFlag: number = 0;
 
   private repository: PropertyRepository = PropertyRepository.getInstance();
+  private functionController: FunctionController = new FunctionController();
+  private agentOptions: FunctionOptions = {
+    title: AgentConfig.AGENT_TITLE,
+    queryText: AgentConfig.AGENT_QUERY_TEXT,
+    isShowShadow: true
+  };
 
   @Monitor('refreshFlag')
   onRefreshFlagChange(): void {
@@ -24,6 +37,27 @@ export struct MyContent {
 
   aboutToAppear(): void {
     this.loadProfile();
+    this.checkAgentSupport();
+  }
+
+  private checkAgentSupport(): void {
+    if (AgentConfig.AGENT_ID.length === 0) {
+      return;
+    }
+    if (!canIUse('SystemCapability.AI.Agent.AgentKit')) {
+      return;
+    }
+    const context: Context | null = this.repository.getContext();
+    if (context === null) {
+      return;
+    }
+    this.functionController.isAgentSupport(context as common.UIAbilityContext, AgentConfig.AGENT_ID)
+      .then((supported: boolean) => {
+        this.isAgentSupport = supported;
+      })
+      .catch((err: BusinessError) => {
+        hilog.error(0, TAG, `isAgentSupport failed, code: ${err.code}, message: ${err.message}`);
+      });
   }
 
   private loadProfile(): void {
@@ -56,7 +90,7 @@ export struct MyContent {
 
   private addWidgetToDesktop(): void {
     try {
-      const context: common.UIAbilityContext = getContext(this) as common.UIAbilityContext;
+      const context: common.UIAbilityContext = this.getUIContext().getHostContext() as common.UIAbilityContext;
       const want: Want = {
         bundleName: context.abilityInfo.bundleName,
         abilityName: 'EntryFormAbility',
@@ -160,6 +194,21 @@ export struct MyContent {
         .onClick(() => {
           this.navPathStack.pushPathByName('ProfileEdit', null);
         })
+
+        if (this.isAgentSupport) {
+          Column() {
+            FunctionComponent({
+              agentId: AgentConfig.AGENT_ID,
+              onError: (err: BusinessError) => {
+                hilog.error(0, TAG, `FunctionComponent error, code: ${err.code}, message: ${err.message}`);
+              },
+              options: this.agentOptions,
+              controller: this.functionController
+            })
+          }
+          .width('100%')
+          .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: 12 })
+        }
 
         Column() {
           MenuItemRow({

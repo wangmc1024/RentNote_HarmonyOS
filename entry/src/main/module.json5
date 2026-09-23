@@ -47,6 +47,20 @@
             "resource": "$profile:form_config"
           }
         ]
+      },
+      {
+        "name": "RentAgentExtAbility",
+        "icon": "$media:app_icon",
+        "description": "$string:module_desc",
+        "type": "agent",
+        "exported": true,
+        "srcEntry": "./ets/agentextability/RentAgentExtAbility.ets",
+        "metadata": [
+          {
+            "name": "ohos.extension.agent",
+            "resource": "$profile:agent_config"
+          }
+        ]
       }
     ],
     "requestPermissions": [

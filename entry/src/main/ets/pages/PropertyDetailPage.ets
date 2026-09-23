@@ -45,7 +45,7 @@ export struct PropertyDetailPage {
   }
 
   aboutToAppear(): void {
-    const context = getContext(this) as common.UIAbilityContext;
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
     this.locationHelper.requestLocationPermission(context);
 
     this.mapOptions = createMapOptions(39.904, 116.407, 14);

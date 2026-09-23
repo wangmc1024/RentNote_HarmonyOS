@@ -4,10 +4,9 @@
 
 import { vibrator } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { promptAction } from '@kit.ArkUI';
+import { window, AppStorageV2 } from '@kit.ArkUI';
 import { PropertyInfo } from '../model/PropertyModel';
 import { PropertyRepository } from '../repository/PropertyRepository';
-import { AppStorageV2 } from '@kit.ArkUI';
 
 @ObservedV2
 export class ReminderState {
@@ -45,7 +44,7 @@ export class ReminderService {
 
     const vibrateEnabled: boolean = repo.getVibrateEnabled();
 
-    this.showToastFallback(properties);
+    await this.showToastFallback(properties);
 
     if (vibrateEnabled) {
       this.triggerVibration();
@@ -65,7 +64,7 @@ export class ReminderService {
     }
   }
 
-  private showToastFallback(properties: PropertyInfo[]): void {
+  private async showToastFallback(properties: PropertyInfo[]): Promise<void> {
     const first: PropertyInfo = properties[0];
     const parts: string[] = first.endDate.split('.');
     if (parts.length !== 3) {
@@ -93,7 +92,12 @@ export class ReminderService {
       message = message + `，共${properties.length}条到期提醒`;
     }
     try {
-      promptAction.showToast({
+      const context: Context | null = PropertyRepository.getInstance().getContext();
+      if (context === null) {
+        return;
+      }
+      const win: window.Window = await window.getLastWindow(context);
+      win.getUIContext().getPromptAction().showToast({
         message: message,
         duration: 4000
       });

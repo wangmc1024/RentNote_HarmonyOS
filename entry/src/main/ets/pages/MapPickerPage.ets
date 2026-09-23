@@ -46,7 +46,7 @@ export struct MapPickerPage {
   });
 
   aboutToAppear(): void {
-    const context = getContext(this) as common.UIAbilityContext;
+    const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
     this.locationHelper.requestLocationPermission(context);
 
     this.mapOptions = createMapOptions(this.initialLat, this.initialLng, 12);

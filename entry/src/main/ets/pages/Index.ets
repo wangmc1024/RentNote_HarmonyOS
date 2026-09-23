@@ -4,6 +4,7 @@ import { CandidateContent } from './CandidateContent';
 import { MyContent } from './MyContent';
 import { PropertyRepository } from '../repository/PropertyRepository';
 import { PropertyIdParam, WidgetNavigateState } from '../model/PropertyModel';
+import { ReminderService, ReminderState } from '../service/ReminderService';
 import { AppStorageV2 } from '@kit.ArkUI';
 
 @Entry
@@ -13,6 +14,7 @@ struct Index {
   @Provider('refreshFlag') refreshFlag: number = 0;
   @Local currentTab: number = 1;
   @Local widgetState: WidgetNavigateState = AppStorageV2.connect(WidgetNavigateState, 'widgetNav', () => new WidgetNavigateState())!;
+  @Local reminderState: ReminderState = AppStorageV2.connect(ReminderState, 'reminderState', () => new ReminderState())!;
 
   private repository: PropertyRepository = PropertyRepository.getInstance();
 
@@ -26,6 +28,11 @@ struct Index {
       }
     });
     this.repository.checkAndResetBillsPaidMonthly();
+    if (this.widgetState.action.length > 0) {
+      this.onWidgetActionChange();
+    }
+    this.reminderState.pendingNotify = false;
+    void ReminderService.getInstance().checkAndNotify();
   }
 
   onPageShow(): void {
@@ -40,6 +47,26 @@ struct Index {
       const addParam: PropertyIdParam = new PropertyIdParam();
       addParam.mode = 'candidate';
       this.navPathStack.pushPathByName('AddProperty', addParam);
+    } else if (this.widgetState.action === 'viewOverview') {
+      this.widgetState.action = '';
+      this.currentTab = 1;
+      this.refreshFlag++;
+    } else if (this.widgetState.action === 'viewCandidates') {
+      this.widgetState.action = '';
+      this.currentTab = 0;
+      this.refreshFlag++;
+    } else if (this.widgetState.action === 'deleteProperty') {
+      this.widgetState.action = '';
+      this.currentTab = 0;
+      this.refreshFlag++;
+    }
+  }
+
+  @Monitor('reminderState.pendingNotify')
+  onReminderPendingChange(): void {
+    if (this.reminderState.pendingNotify) {
+      this.reminderState.pendingNotify = false;
+      void ReminderService.getInstance().checkAndNotify();
     }
   }
 
