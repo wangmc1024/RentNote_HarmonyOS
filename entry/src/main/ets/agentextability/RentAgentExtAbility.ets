@@ -1,36 +1,29 @@
 import { AgentExtensionAbility, Want, common } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { PropertyRepository } from '../repository/PropertyRepository';
-import { PropertyInfo } from '../model/PropertyModel';
+import { RentAgentSkillHandler, SkillResult, SkillState } from './RentAgentSkillHandler';
 
 const TAG: string = 'RentAgentExt';
 
+/** 元服务端侧智能体应答信封（API 24 端侧A2A框架，AgentHostProxy 通道自定义协议） */
 export class AgentSkillResponse {
   code: number = 0;
   message: string = '';
   data: Record<string, Object> | null = null;
 }
 
-export class ExpiringItem {
-  name: string = '';
-  endDate: string = '';
-  remainingDays: number = 0;
+/** 从请求数据中解析出的技能调用 */
+export class AgentRequestParse {
+  skillId: string = '';
+  params: Record<string, Object> = {};
 }
 
-export class CandidateItem {
-  name: string = '';
-  address: string = '';
-  district: string = '';
-  monthlyRent: number = 0;
-  notes: string = '';
-}
-
+/**
+ * 元服务（installationFree）不支持 @kit.AgentFrameworkKit 的 A2A 标准协议模块，
+ * 按端侧A2A框架（API 24）开发指导使用 AgentExtensionAbility + AgentHostProxy 通道：
+ * 请求数据为 JSON（{skillId, params}），无法解析时回退为用户话术启发式解析。
+ */
 export default class RentAgentExtAbility extends AgentExtensionAbility {
-  private static readonly SKILL_QUERY_OVERVIEW: string = 'query_rental_overview';
-  private static readonly SKILL_ADD_PROPERTY: string = 'add_property';
-  private static readonly SKILL_QUERY_CANDIDATES: string = 'query_candidate_properties';
-  private static readonly SKILL_DELETE_PROPERTY: string = 'delete_property';
-
   onCreate(want: Want): void {
     hilog.info(0, TAG, 'onCreate');
     void PropertyRepository.getInstance().init(this.context);
@@ -45,35 +38,27 @@ export default class RentAgentExtAbility extends AgentExtensionAbility {
   }
 
   onAuth(proxy: common.AgentHostProxy, handshakeData: string): void {
+    hilog.info(0, TAG, 'onAuth');
     try {
       proxy.authorize('auth success');
-    } catch (_e) {
-      hilog.error(0, TAG, 'authorize failed');
+    } catch (error) {
+      hilog.error(0, TAG, `authorize failed: ${error}`);
     }
   }
 
   onData(proxy: common.AgentHostProxy, data: string): void {
     hilog.info(0, TAG, `onData: ${data}`);
-    let skillId: string = '';
-    let params: Record<string, Object> = {};
-    try {
-      const raw: Record<string, Object> = JSON.parse(data) as Record<string, Object>;
-      skillId = (raw['skillId'] as string) ?? '';
-      params = (raw['params'] as Record<string, Object>) ?? {};
-    } catch (_e) {
-      this.replyError(proxy, 'invalid request format');
-      return;
-    }
-    if (skillId === RentAgentExtAbility.SKILL_QUERY_OVERVIEW) {
-      void this.handleQueryOverview(proxy);
-    } else if (skillId === RentAgentExtAbility.SKILL_ADD_PROPERTY) {
-      void this.handleAddProperty(proxy, params);
-    } else if (skillId === RentAgentExtAbility.SKILL_QUERY_CANDIDATES) {
-      void this.handleQueryCandidates(proxy);
-    } else if (skillId === RentAgentExtAbility.SKILL_DELETE_PROPERTY) {
-      void this.handleDeleteProperty(proxy, params);
+    const req: AgentRequestParse = this.parseRequestData(data);
+    if (req.skillId === RentAgentSkillHandler.SKILL_QUERY_OVERVIEW) {
+      void this.executeSkill(proxy, RentAgentSkillHandler.queryOverview());
+    } else if (req.skillId === RentAgentSkillHandler.SKILL_ADD_PROPERTY) {
+      void this.executeSkill(proxy, RentAgentSkillHandler.addProperty(req.params));
+    } else if (req.skillId === RentAgentSkillHandler.SKILL_QUERY_CANDIDATES) {
+      void this.executeSkill(proxy, RentAgentSkillHandler.queryCandidates());
+    } else if (req.skillId === RentAgentSkillHandler.SKILL_DELETE_PROPERTY) {
+      void this.executeSkill(proxy, RentAgentSkillHandler.deleteProperty(req.params));
     } else {
-      this.replyError(proxy, `unknown skill: ${skillId}`);
+      this.replyError(proxy, RentAgentSkillHandler.HELP_TEXT);
     }
   }
 
@@ -81,173 +66,41 @@ export default class RentAgentExtAbility extends AgentExtensionAbility {
     hilog.info(0, TAG, 'onDestroy');
   }
 
-  private async handleQueryOverview(proxy: common.AgentHostProxy): Promise<void> {
-    const repo: PropertyRepository = PropertyRepository.getInstance();
-    await repo.reloadData();
-    const overview = repo.getStatisticsOverview();
-    const reminderDays: number = repo.getReminderDays();
-    const expiring: PropertyInfo[] = repo.getExpiringProperties(reminderDays);
-    const expiringItems: ExpiringItem[] = [];
-    for (const p of expiring) {
-      const item: ExpiringItem = new ExpiringItem();
-      item.name = p.name;
-      item.endDate = p.endDate;
-      item.remainingDays = this.calcRemainingDays(p.endDate);
-      expiringItems.push(item);
+  private async executeSkill(proxy: common.AgentHostProxy, pending: Promise<SkillResult>): Promise<void> {
+    let result: SkillResult = new SkillResult();
+    try {
+      result = await pending;
+    } catch (error) {
+      hilog.error(0, TAG, `execute skill failed: ${error}`);
+      result = new SkillResult();
+      result.state = SkillState.FAILED;
+      result.summary = '处理请求时出现异常，请稍后再试。';
     }
-    let suggestion: string = '';
-    if (expiringItems.length === 0) {
-      suggestion = `当前共${overview.rentingCount}套在租房源，平均月租${overview.monthlyAvgRent}元，暂无${reminderDays}天内到期的租约。`;
+    this.reply(proxy, this.toResponse(result));
+  }
+
+  private toResponse(result: SkillResult): AgentSkillResponse {
+    const resp: AgentSkillResponse = new AgentSkillResponse();
+    resp.data = result.data;
+    resp.data['suggestion'] = result.summary;
+    if (result.state === SkillState.COMPLETED) {
+      resp.code = 0;
+      resp.message = 'ok';
+    } else if (result.state === SkillState.INPUT_REQUIRED) {
+      resp.code = 1;
+      resp.message = result.summary;
     } else {
-      const nearest: ExpiringItem = expiringItems[0];
-      suggestion = `有${expiringItems.length}套租约将在${reminderDays}天内到期，最近的是"${nearest.name}"（剩${nearest.remainingDays}天），建议尽快联系租客确认续约或安排退租交接。`;
-    }
-    const resp: AgentSkillResponse = new AgentSkillResponse();
-    resp.code = 0;
-    resp.message = 'ok';
-    resp.data = {
-      'rentingCount': overview.rentingCount,
-      'monthlyAvgRent': overview.monthlyAvgRent,
-      'reminderDays': reminderDays,
-      'expiring': expiringItems,
-      'suggestion': suggestion
-    };
-    this.reply(proxy, resp);
-  }
-
-  private async handleAddProperty(proxy: common.AgentHostProxy, params: Record<string, Object>): Promise<void> {
-    const repo: PropertyRepository = PropertyRepository.getInstance();
-    await repo.reloadData();
-    const property: PropertyInfo = new PropertyInfo();
-    property.name = (params['name'] as string) ?? '';
-    property.address = (params['address'] as string) ?? '';
-    property.district = (params['district'] as string) ?? '';
-    property.monthlyRent = (params['monthlyRent'] as number) ?? 0;
-    property.deposit = (params['deposit'] as number) ?? 0;
-    property.startDate = (params['startDate'] as string) ?? '';
-    property.endDate = (params['endDate'] as string) ?? '';
-    property.notes = (params['notes'] as string) ?? '';
-    const statusParam: string = (params['status'] as string) ?? '';
-    property.status = statusParam === 'renting' ? 'renting' : 'candidate';
-    if (property.name.length === 0) {
-      this.replyError(proxy, 'params missing required field: name');
-      return;
-    }
-    await repo.addProperty(property);
-    const resp: AgentSkillResponse = new AgentSkillResponse();
-    resp.code = 0;
-    resp.message = 'ok';
-    resp.data = {
-      'propertyId': property.id,
-      'status': property.status === 'candidate' ? '已记入备选' : '已记入在租'
-    };
-    this.reply(proxy, resp);
-  }
-
-  private async handleQueryCandidates(proxy: common.AgentHostProxy): Promise<void> {
-    const repo: PropertyRepository = PropertyRepository.getInstance();
-    await repo.reloadData();
-    const candidates: PropertyInfo[] = repo.getCandidates();
-    const items: CandidateItem[] = [];
-    for (const p of candidates) {
-      const item: CandidateItem = new CandidateItem();
-      item.name = p.name;
-      item.address = p.address;
-      item.district = p.district;
-      item.monthlyRent = p.monthlyRent;
-      item.notes = p.notes;
-      items.push(item);
-    }
-    let suggestion: string = '';
-    if (items.length === 0) {
-      suggestion = '当前没有记录备选房源，看房时可以让我帮你记录。';
-    } else {
-      suggestion = `共记录了${items.length}套备选房源，可以在备选页查看详情，确定租房后可转正在租。`;
-    }
-    const resp: AgentSkillResponse = new AgentSkillResponse();
-    resp.code = 0;
-    resp.message = 'ok';
-    resp.data = {
-      'count': items.length,
-      'candidates': items,
-      'suggestion': suggestion
-    };
-    this.reply(proxy, resp);
-  }
-
-  private async handleDeleteProperty(proxy: common.AgentHostProxy, params: Record<string, Object>): Promise<void> {
-    const repo: PropertyRepository = PropertyRepository.getInstance();
-    await repo.reloadData();
-    const name: string = (params['name'] as string) ?? '';
-    const statusFilter: string = (params['status'] as string) ?? '';
-    if (name.length === 0) {
-      this.replyError(proxy, 'params missing required field: name');
-      return;
-    }
-    let pool: PropertyInfo[] = [...repo.getCandidates(), ...repo.getRentingProperties()];
-    if (statusFilter === 'candidate' || statusFilter === 'renting') {
-      pool = pool.filter((p: PropertyInfo) => {
-        if (statusFilter === 'candidate') {
-          return p.status === 'candidate';
-        }
-        return p.status === 'renting' || p.status === 'expiring';
-      });
-    }
-    let matched: PropertyInfo[] = pool.filter((p: PropertyInfo) => p.name === name);
-    if (matched.length === 0) {
-      matched = pool.filter((p: PropertyInfo) => p.name.includes(name) || name.includes(p.name));
-    }
-    if (matched.length === 0) {
-      this.replyError(proxy, `未找到名为"${name}"的房源记录`);
-      return;
-    }
-    if (matched.length > 1) {
-      const names: string[] = matched.map((p: PropertyInfo) => {
-        return `${p.name}（${p.status === 'candidate' ? '备选' : '在租'}）`;
-      });
-      const resp: AgentSkillResponse = new AgentSkillResponse();
       resp.code = -1;
-      resp.message = `找到${matched.length}套匹配的房源：${names.join('、')}，请说明要删除哪一套`;
-      resp.data = {
-        'matched': names
-      };
-      this.reply(proxy, resp);
-      return;
+      resp.message = result.summary;
     }
-    const target: PropertyInfo = matched[0];
-    const deletedName: string = target.name;
-    const deletedStatusLabel: string = target.status === 'candidate' ? '备选' : '在租';
-    await repo.deleteProperty(target.id);
-    const resp: AgentSkillResponse = new AgentSkillResponse();
-    resp.code = 0;
-    resp.message = 'ok';
-    resp.data = {
-      'deletedName': deletedName,
-      'status': deletedStatusLabel
-    };
-    this.reply(proxy, resp);
-  }
-
-  private calcRemainingDays(endDate: string): number {
-    const parts: string[] = endDate.split('.');
-    if (parts.length !== 3) {
-      return 0;
-    }
-    const expiry: Date = new Date(
-      parseInt(parts[0], 10),
-      parseInt(parts[1], 10) - 1,
-      parseInt(parts[2], 10)
-    );
-    const now: Date = new Date();
-    now.setHours(0, 0, 0, 0);
-    return Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return resp;
   }
 
   private reply(proxy: common.AgentHostProxy, resp: AgentSkillResponse): void {
     try {
       proxy.sendData(JSON.stringify(resp));
-    } catch (_e) {
-      hilog.error(0, TAG, 'sendData failed');
+    } catch (error) {
+      hilog.error(0, TAG, `sendData failed: ${error}`);
     }
   }
 
@@ -256,5 +109,152 @@ export default class RentAgentExtAbility extends AgentExtensionAbility {
     resp.code = -1;
     resp.message = message;
     this.reply(proxy, resp);
+  }
+
+  private parseRequestData(data: string): AgentRequestParse {
+    const req: AgentRequestParse = new AgentRequestParse();
+    try {
+      const raw: Record<string, Object> = JSON.parse(data) as Record<string, Object>;
+      req.skillId = (raw['skillId'] as string) ?? '';
+      const params: Record<string, Object> = (raw['params'] as Record<string, Object>) ?? {};
+      req.params = this.mergeFlatParams(raw, params);
+    } catch (_e) {
+      const text: string = data.trim();
+      if (text.length > 0) {
+        return this.parseFromText(text);
+      }
+    }
+    return req;
+  }
+
+  private mergeFlatParams(raw: Record<string, Object>, params: Record<string, Object>): Record<string, Object> {
+    const flatKeys: string[] = ['name', 'address', 'district', 'monthlyRent', 'deposit',
+      'startDate', 'endDate', 'notes', 'status'];
+    for (const key of flatKeys) {
+      const val: Object | undefined = raw[key];
+      if (val !== undefined) {
+        params[key] = val;
+      }
+    }
+    return params;
+  }
+
+  private parseFromText(t: string): AgentRequestParse {
+    const req: AgentRequestParse = new AgentRequestParse();
+    if (t.includes('删') || t.includes('移除') || t.includes('去掉') || t.includes('清掉')) {
+      req.skillId = RentAgentSkillHandler.SKILL_DELETE_PROPERTY;
+      req.params = this.extractDeleteParams(t);
+      return req;
+    }
+    if (t.includes('记一套') || t.includes('记录一') || t.includes('记个') || t.includes('帮我记') ||
+      t.includes('新增') || t.includes('添加') || t.includes('录入')) {
+      req.skillId = RentAgentSkillHandler.SKILL_ADD_PROPERTY;
+      req.params = this.extractAddParams(t);
+      return req;
+    }
+    if ((t.includes('备选') || t.includes('候选') || t.includes('看房')) &&
+      (t.includes('哪些') || t.includes('什么') || t.includes('查') || t.includes('看看') ||
+      t.includes('列表') || t.includes('几个') || t.includes('多少') || t.includes('看了'))) {
+      req.skillId = RentAgentSkillHandler.SKILL_QUERY_CANDIDATES;
+      return req;
+    }
+    req.skillId = RentAgentSkillHandler.SKILL_QUERY_OVERVIEW;
+    return req;
+  }
+
+  private extractDeleteParams(t: string): Record<string, Object> {
+    const params: Record<string, Object> = {};
+    if (t.includes('备选')) {
+      params['status'] = 'candidate';
+    } else if (t.includes('在租')) {
+      params['status'] = 'renting';
+    }
+    let name: string = '';
+    const baMatch: string[] | null = t.match(new RegExp('把(.+?)(删|移除|去掉|清掉)'));
+    if (baMatch !== null && baMatch.length > 1) {
+      name = baMatch[1];
+    }
+    if (name.length === 0) {
+      const afterMatch: string[] | null = t.match(new RegExp('(?:删|移除|去掉|清掉)(.+)'));
+      if (afterMatch !== null && afterMatch.length > 1) {
+        name = afterMatch[1];
+      }
+    }
+    name = this.cleanPropertyName(name);
+    if (name.length > 0) {
+      params['name'] = name;
+    }
+    return params;
+  }
+
+  private cleanPropertyName(name: string): string {
+    let n: string = name.trim();
+    n = n.replace(new RegExp('^(了|掉|备选里的|备选中的|备选的|在租里的|在租中的|在租的|台账里的|台账中的)', 'g'), '');
+    n = n.replace(new RegExp('(那套房|那套|这套房|这套|的房源|的记录|房源|记录)$', 'g'), '');
+    n = n.replace(new RegExp('的$', 'g'), '');
+    return n.trim();
+  }
+
+  private extractAddParams(t: string): Record<string, Object> {
+    const params: Record<string, Object> = {};
+    const colonIdx: number = t.search(new RegExp('[:：]'));
+    if (colonIdx >= 0) {
+      const body: string = t.substring(colonIdx + 1);
+      const segs: string[] = body.split(new RegExp('[，,]'));
+      if (segs.length > 0) {
+        const name: string = segs[0].trim();
+        if (name.length > 0) {
+          params['name'] = name;
+        }
+      }
+    }
+    const rentMatch: string[] | null =
+      t.match(new RegExp('(月租金|月租|房租|租金)[：:]?(约为|约|是|大概|大约)?([0-9]+(\\.[0-9]+)?)'));
+    if (rentMatch !== null && rentMatch.length > 3) {
+      params['monthlyRent'] = parseFloat(rentMatch[3]);
+    }
+    const depositMatch: string[] | null =
+      t.match(new RegExp('押金[：:]?(约为|约|是|大概|大约)?([0-9]+(\\.[0-9]+)?)'));
+    if (depositMatch !== null && depositMatch.length > 2) {
+      params['deposit'] = parseFloat(depositMatch[2]);
+    }
+    const dateMatches: string[] | null =
+      t.match(new RegExp('[0-9]{4}[.年-][0-9]{1,2}[.月-][0-9]{1,2}日?', 'g'));
+    if (dateMatches !== null) {
+      const normalized: string[] = [];
+      for (const d of dateMatches) {
+        const nd: string = this.normalizeDate(d);
+        if (nd.length > 0) {
+          normalized.push(nd);
+        }
+      }
+      if (normalized.length === 1 && t.includes('到期')) {
+        params['endDate'] = normalized[0];
+      } else if (normalized.length > 0) {
+        params['startDate'] = normalized[0];
+        if (normalized.length > 1) {
+          params['endDate'] = normalized[1];
+        }
+      }
+    }
+    if (t.includes('租约') || t.includes('在租')) {
+      params['status'] = 'renting';
+    } else {
+      params['status'] = 'candidate';
+    }
+    return params;
+  }
+
+  private normalizeDate(raw: string): string {
+    let s: string = raw.replace(new RegExp('[年月-]', 'g'), '.');
+    s = s.replace(new RegExp('日', 'g'), '');
+    const parts: string[] = s.split('.');
+    if (parts.length !== 3) {
+      return '';
+    }
+    const year: string = parts[0];
+    const month: string = parts[1].padStart(2, '0');
+    const day: string = parts[2].padStart(2, '0');
+    return `${year}.${month}.${day}`;
   }
 }

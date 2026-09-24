@@ -182,72 +182,76 @@ export struct HomeContent {
   }
 
   build() {
-    Scroll() {
-      Column() {
-        Row() {
-          Text('Home')
-            .fontSize(FontSizes.PAGE_TITLE)
-            .fontColor(Colors.TEXT_PRIMARY)
-            .fontFamily(Fonts.CN)
-            .fontWeight(FontWeight.Bold)
-        }
-        .width('100%')
-        .height(Dimensions.HEADER_HEIGHT)
-        .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
-
-        if (this.showWidgetTip) {
-          Row() {
-            SymbolGlyph($r('sys.symbol.square_grid_2x2'))
-              .fontSize(20)
-              .fontColor([Colors.PRIMARY])
-
-            Text('添加桌面小组件，实时查看租金与到期提醒')
-              .fontSize(FontSizes.BODY_SMALL)
-              .fontColor(Colors.TEXT_SECONDARY)
-              .fontFamily(Fonts.CN)
-              .layoutWeight(1)
-              .margin({ left: 8 })
-
-            Text('添加')
-              .fontSize(FontSizes.CAPTION)
-              .fontColor(Colors.PRIMARY)
-              .fontFamily(Fonts.CN)
-              .fontWeight(FontWeight.Medium)
-              .padding({ left: 10, right: 10, top: 4, bottom: 4 })
-              .backgroundColor(Colors.PRIMARY_LIGHT)
-              .borderRadius(Radius.TAG)
-              .onClick(() => {
-                this.addWidgetFromTip();
-              })
-
-            SymbolGlyph($r('sys.symbol.xmark'))
-              .fontSize(14)
-              .fontColor([Colors.TEXT_MUTED])
-              .margin({ left: 8 })
-              .onClick(() => {
-                this.dismissWidgetTip();
-              })
-          }
-          .width('100%')
-          .alignItems(VerticalAlign.Center)
-          .padding({ left: 16, right: 12, top: 10, bottom: 10 })
-          .backgroundColor(Colors.PRIMARY_LIGHT)
-          .borderRadius(Radius.CARD_SM)
-          .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
-        }
-
-        if (this.viewModel.rentingProperties.length === 0) {
-          this.EmptyState()
-        } else {
-          this.RentingState()
-        }
-
-        Column().height(96)
+    Column() {
+      Row() {
+        Text('Home')
+          .fontSize(FontSizes.PAGE_TITLE)
+          .fontColor(Colors.TEXT_PRIMARY)
+          .fontFamily(Fonts.CN)
+          .fontWeight(FontWeight.Bold)
       }
+      .width('100%')
+      .height(Dimensions.HEADER_HEIGHT)
+      .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
+
+      Scroll() {
+        Column() {
+          if (this.showWidgetTip) {
+            Row() {
+              SymbolGlyph($r('sys.symbol.square_grid_2x2'))
+                .fontSize(20)
+                .fontColor([Colors.PRIMARY])
+
+              Text('添加桌面小组件，实时查看租金与到期提醒')
+                .fontSize(FontSizes.BODY_SMALL)
+                .fontColor(Colors.TEXT_SECONDARY)
+                .fontFamily(Fonts.CN)
+                .layoutWeight(1)
+                .margin({ left: 8 })
+
+              Text('添加')
+                .fontSize(FontSizes.CAPTION)
+                .fontColor(Colors.PRIMARY)
+                .fontFamily(Fonts.CN)
+                .fontWeight(FontWeight.Medium)
+                .padding({ left: 10, right: 10, top: 4, bottom: 4 })
+                .backgroundColor(Colors.PRIMARY_LIGHT)
+                .borderRadius(Radius.TAG)
+                .onClick(() => {
+                  this.addWidgetFromTip();
+                })
+
+              SymbolGlyph($r('sys.symbol.xmark'))
+                .fontSize(14)
+                .fontColor([Colors.TEXT_MUTED])
+                .margin({ left: 8 })
+                .onClick(() => {
+                  this.dismissWidgetTip();
+                })
+            }
+            .width('100%')
+            .alignItems(VerticalAlign.Center)
+            .padding({ left: 16, right: 12, top: 10, bottom: 10 })
+            .backgroundColor(Colors.PRIMARY_LIGHT)
+            .borderRadius(Radius.CARD_SM)
+            .margin({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
+          }
+
+          if (this.viewModel.rentingProperties.length === 0) {
+            this.EmptyState()
+          } else {
+            this.RentingState()
+          }
+
+          Column().height(96)
+        }
+      }
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.Spring)
+      .layoutWeight(1)
     }
-    .scrollBar(BarState.Off)
-    .edgeEffect(EdgeEffect.Spring)
-    .layoutWeight(1)
+    .width('100%')
+    .height('100%')
   }
 
   @Builder

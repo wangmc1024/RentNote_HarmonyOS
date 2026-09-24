@@ -1,64 +1,16 @@
 {
-  "insightIntents": [
+  "insightIntentsSrcEntry": [
     {
-      "intentName": "AddRentalProperty",
-      "domain": "RentalDomain",
-      "intentVersion": "1.0.0",
-      "displayName": "新增房源",
-      "displayDescription": "打开小寓台账新增房源页面，记录房源与租约信息",
-      "keywords": ["记租金", "新增房源", "添加租约", "租房记账"],
-      "srcEntry": "./ets/insightintents/InsightIntentExecutorImpl.ets",
-      "uiAbility": {
-        "ability": "EntryAbility",
-        "executeMode": [
-          "foreground"
-        ]
-      }
+      "srcEntry": "./ets/insightintents/AddRentalPropertyImpl.ets"
     },
     {
-      "intentName": "ViewLeaseOverview",
-      "domain": "RentalDomain",
-      "intentVersion": "1.0.0",
-      "displayName": "查看租约概览",
-      "displayDescription": "打开小寓台账首页，查看租金收缴与租约到期概览",
-      "keywords": ["租约", "到期提醒", "收租", "租金统计"],
-      "srcEntry": "./ets/insightintents/InsightIntentExecutorImpl.ets",
-      "uiAbility": {
-        "ability": "EntryAbility",
-        "executeMode": [
-          "foreground"
-        ]
-      }
+      "srcEntry": "./ets/insightintents/ViewLeaseOverviewImpl.ets"
     },
     {
-      "intentName": "ViewCandidateProperties",
-      "domain": "RentalDomain",
-      "intentVersion": "1.0.0",
-      "displayName": "查看备选房源",
-      "displayDescription": "打开小寓台账备选房源页，查看已记录的备选房源列表",
-      "keywords": ["备选房源", "候选房源", "看房记录", "找房"],
-      "srcEntry": "./ets/insightintents/InsightIntentExecutorImpl.ets",
-      "uiAbility": {
-        "ability": "EntryAbility",
-        "executeMode": [
-          "foreground"
-        ]
-      }
+      "srcEntry": "./ets/insightintents/ViewCandidatePropertiesImpl.ets"
     },
     {
-      "intentName": "DeleteProperty",
-      "domain": "RentalDomain",
-      "intentVersion": "1.0.0",
-      "displayName": "删除房源",
-      "displayDescription": "删除小寓台账中已记录的房源记录",
-      "keywords": ["删除房源", "移除房源", "删掉记录"],
-      "srcEntry": "./ets/insightintents/InsightIntentExecutorImpl.ets",
-      "uiAbility": {
-        "ability": "EntryAbility",
-        "executeMode": [
-          "foreground"
-        ]
-      }
+      "srcEntry": "./ets/insightintents/DeletePropertyImpl.ets"
     }
   ]
 }

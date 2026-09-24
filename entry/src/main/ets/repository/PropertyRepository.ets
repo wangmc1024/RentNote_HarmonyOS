@@ -116,6 +116,36 @@ export class PropertyRepository {
     this.isInitialized = true;
   }
 
+  initSync(context: Context): void {
+    if (this.isInitialized) {
+      return;
+    }
+    this.initContext = context;
+    try {
+      const opts: preferences.Options = { name: PREFS_NAME };
+      this.prefs = preferences.getPreferencesSync(context, opts);
+    } catch (_e) {
+      return;
+    }
+    const storedVersion: number = this.safeGetSync(KEY_VERSION, 0) as number;
+    if (storedVersion === 0) {
+      this.safePutSync(KEY_PROPERTIES, '[]');
+      this.safePutSync(KEY_VERSION, DATA_VERSION);
+      void this.safeFlush();
+    } else if (storedVersion < DATA_VERSION) {
+      this.loadFromPrefs();
+      this.safePutSync(KEY_VERSION, DATA_VERSION);
+      const dtoList: PropertyDTO[] = [];
+      for (const p of this.properties) {
+        dtoList.push(p.toDTO());
+      }
+      this.safePutSync(KEY_PROPERTIES, JSON.stringify(dtoList));
+      void this.safeFlush();
+    }
+    this.loadFromPrefs();
+    this.isInitialized = true;
+  }
+
   private async ensureInit(): Promise<void> {
     if (this.isInitialized) {
       return;

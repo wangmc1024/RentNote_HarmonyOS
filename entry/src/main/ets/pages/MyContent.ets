@@ -6,11 +6,17 @@ import { UserProfile } from '../model/PropertyModel';
 import { PropertyRepository } from '../repository/PropertyRepository';
 import { formProvider, formInfo } from '@kit.FormKit';
 import { Want, common } from '@kit.AbilityKit';
-import { FunctionComponent, FunctionController, FunctionOptions } from '@kit.AgentFrameworkKit';
-import { BusinessError } from '@kit.BasicServicesKit';
+import { NodeController, UIContext, FrameNode } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { deviceInfo } from '@kit.BasicServicesKit';
 
 const TAG: string = 'MyContent';
+
+class EmptyNodeController extends NodeController {
+  makeNode(uiContext: UIContext): FrameNode | null {
+    return null;
+  }
+}
 
 @ComponentV2
 export struct MyContent {
@@ -19,16 +25,11 @@ export struct MyContent {
   @Local avatarUri: string = '';
   @Local dataSize: string = '0.00 MB';
   @Local isAgentSupport: boolean = false;
+  @Local agentNodeController: NodeController = new EmptyNodeController();
   @Consumer('navPathStack') navPathStack: NavPathStack = new NavPathStack();
   @Consumer('refreshFlag') refreshFlag: number = 0;
 
   private repository: PropertyRepository = PropertyRepository.getInstance();
-  private functionController: FunctionController = new FunctionController();
-  private agentOptions: FunctionOptions = {
-    title: AgentConfig.AGENT_TITLE,
-    queryText: AgentConfig.AGENT_QUERY_TEXT,
-    isShowShadow: true
-  };
 
   @Monitor('refreshFlag')
   onRefreshFlagChange(): void {
@@ -37,27 +38,35 @@ export struct MyContent {
 
   aboutToAppear(): void {
     this.loadProfile();
-    this.checkAgentSupport();
+    void this.checkAgentSupport();
   }
 
-  private checkAgentSupport(): void {
-    if (AgentConfig.AGENT_ID.length === 0) {
+  private async checkAgentSupport(): Promise<void> {
+    if (!AgentConfig.AGENT_ID.startsWith('agent_')) {
       return;
     }
     if (!canIUse('SystemCapability.AI.Agent.AgentKit')) {
       return;
     }
-    const context: Context | null = this.repository.getContext();
-    if (context === null) {
-      return;
+    if (deviceInfo.sdkApiVersion >= 20) {
+      const context: Context | null = this.repository.getContext();
+      if (context === null) {
+        return;
+      }
+      try {
+        const card = await import('../components/AgentEntryCard');
+        const controller = await card.createAgentEntryController(
+          this.getUIContext(), context as common.UIAbilityContext,
+          AgentConfig.AGENT_ID, AgentConfig.AGENT_TITLE, AgentConfig.AGENT_QUERY_TEXT);
+        if (controller === null) {
+          return;
+        }
+        this.agentNodeController = controller;
+        this.isAgentSupport = true;
+      } catch (e) {
+        hilog.error(0, TAG, `load agent entry failed: ${JSON.stringify(e)}`);
+      }
     }
-    this.functionController.isAgentSupport(context as common.UIAbilityContext, AgentConfig.AGENT_ID)
-      .then((supported: boolean) => {
-        this.isAgentSupport = supported;
-      })
-      .catch((err: BusinessError) => {
-        hilog.error(0, TAG, `isAgentSupport failed, code: ${err.code}, message: ${err.message}`);
-      });
   }
 
   private loadProfile(): void {
@@ -117,23 +126,24 @@ export struct MyContent {
   }
 
   build() {
-    Scroll() {
-      Column() {
-        Row() {
-          Text('我的')
-            .fontSize(FontSizes.PAGE_TITLE)
-            .fontColor(Colors.TEXT_PRIMARY)
-            .fontFamily(Fonts.CN)
-            .fontWeight(FontWeight.Bold)
+    Column() {
+      Row() {
+        Text('我的')
+          .fontSize(FontSizes.PAGE_TITLE)
+          .fontColor(Colors.TEXT_PRIMARY)
+          .fontFamily(Fonts.CN)
+          .fontWeight(FontWeight.Bold)
 
-          Blank()
-        }
-        .width('100%')
-        .height(Dimensions.HEADER_HEIGHT)
-        .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
+        Blank()
+      }
+      .width('100%')
+      .height(Dimensions.HEADER_HEIGHT)
+      .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL })
 
+      Scroll() {
         Column() {
-          Row() {
+          Column() {
+            Row() {
             if (this.avatarUri.length > 0) {
               Image(this.avatarUri)
                 .width(Dimensions.AVATAR_SIZE)
@@ -197,14 +207,7 @@ export struct MyContent {
 
         if (this.isAgentSupport) {
           Column() {
-            FunctionComponent({
-              agentId: AgentConfig.AGENT_ID,
-              onError: (err: BusinessError) => {
-                hilog.error(0, TAG, `FunctionComponent error, code: ${err.code}, message: ${err.message}`);
-              },
-              options: this.agentOptions,
-              controller: this.functionController
-            })
+            NodeContainer(this.agentNodeController)
           }
           .width('100%')
           .padding({ left: Spacing.PAGE_HORIZONTAL, right: Spacing.PAGE_HORIZONTAL, top: 12 })
@@ -323,10 +326,13 @@ export struct MyContent {
           .textAlign(TextAlign.Center)
           .width('100%')
           .margin({ top: 28, bottom: 32 })
+        }
       }
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.Spring)
+      .layoutWeight(1)
     }
-    .scrollBar(BarState.Off)
-    .edgeEffect(EdgeEffect.Spring)
-    .layoutWeight(1)
+    .width('100%')
+    .height('100%')
   }
 }

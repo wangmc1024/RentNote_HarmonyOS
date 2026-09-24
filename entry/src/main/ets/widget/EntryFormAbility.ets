@@ -118,6 +118,7 @@ export default class EntryFormAbility extends FormExtensionAbility {
   }
 
   private buildFormData(): Record<string, Object> {
+    PropertyRepository.getInstance().initSync(this.context);
     return EntryFormAbility.buildWidgetFormData();
   }
 
