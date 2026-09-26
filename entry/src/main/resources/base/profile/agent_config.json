@@ -67,7 +67,7 @@
       "iconUrl": "common/app_icon.png",
       "category": "finance",
       "type": "ATOMIC_SERVICE",
-      "extension": "{\"greeting\":\"你好，我是小寓租务助手，可以帮你查看租约概况、查询备选房源、记录新房源或删除记录\"}",
+      "extension": "{\"protocolVersion\":\"1.0.0\",\"introduction\":\"你好，我是小寓租务助手，可以帮你查看租约概况、查询备选房源、记录新房源或删除记录\"}",
       "appInfo": {
         "deviceTypes": ["phone", "tablet"]
       }
