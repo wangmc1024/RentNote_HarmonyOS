@@ -5,7 +5,9 @@ import { MyContent } from './MyContent';
 import { PropertyRepository } from '../repository/PropertyRepository';
 import { PropertyIdParam, WidgetNavigateState } from '../model/PropertyModel';
 import { ReminderService, ReminderState } from '../service/ReminderService';
-import { AppStorageV2 } from '@kit.ArkUI';
+import { AppStorageV2, window } from '@kit.ArkUI';
+import { common } from '@kit.AbilityKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 @Entry
 @ComponentV2
@@ -15,8 +17,11 @@ struct Index {
   @Local currentTab: number = 1;
   @Local widgetState: WidgetNavigateState = AppStorageV2.connect(WidgetNavigateState, 'widgetNav', () => new WidgetNavigateState())!;
   @Local reminderState: ReminderState = AppStorageV2.connect(ReminderState, 'reminderState', () => new ReminderState())!;
+  @Local topAvoidVp: number = 0;
+  @Local bottomAvoidVp: number = 0;
 
   private repository: PropertyRepository = PropertyRepository.getInstance();
+  private mainWindow: window.Window | null = null;
 
   aboutToAppear(): void {
     this.navPathStack.setInterception({
@@ -33,6 +38,48 @@ struct Index {
     }
     this.reminderState.pendingNotify = false;
     void ReminderService.getInstance().checkAndNotify();
+    this.initSafeAreaInsets();
+  }
+
+  aboutToDisappear(): void {
+    if (this.mainWindow !== null) {
+      this.mainWindow.off('avoidAreaChange');
+      this.mainWindow = null;
+    }
+  }
+
+  /**
+   * 沉浸式布局下的系统栏避让：读取状态栏（含元服务胶囊）与底部导航条高度，
+   * 并监听变化（折叠屏展开/旋转），供根节点 padding 使用。
+   */
+  private initSafeAreaInsets(): void {
+    const context: common.Context | undefined = this.getUIContext().getHostContext();
+    if (context === undefined) {
+      return;
+    }
+    window.getLastWindow(context)
+      .then((win: window.Window) => {
+        this.mainWindow = win;
+        this.refreshSafeAreaInsets(win);
+        win.on('avoidAreaChange', () => {
+          this.refreshSafeAreaInsets(win);
+        });
+      })
+      .catch((err: BusinessError) => {
+        console.error('[RentalTracker] getLastWindow failed: ' + JSON.stringify(err));
+      });
+  }
+
+  private refreshSafeAreaInsets(win: window.Window): void {
+    try {
+      const systemArea: window.AvoidArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM);
+      const indicatorArea: window.AvoidArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR);
+      this.topAvoidVp = this.getUIContext().px2vp(systemArea.topRect.height);
+      const bottomPx: number = Math.max(systemArea.bottomRect.height, indicatorArea.bottomRect.height);
+      this.bottomAvoidVp = this.getUIContext().px2vp(bottomPx);
+    } catch (error) {
+      console.error('[RentalTracker] refresh safe area insets failed: ' + JSON.stringify(error));
+    }
   }
 
   onPageShow(): void {
@@ -101,6 +148,8 @@ struct Index {
     .hideToolBar(true)
     .hideTitleBar(true)
     .mode(NavigationMode.Stack)
+    .backgroundColor(Colors.BG_PRIMARY)
+    .padding({ top: this.topAvoidVp, bottom: this.bottomAvoidVp })
   }
 
   @Builder

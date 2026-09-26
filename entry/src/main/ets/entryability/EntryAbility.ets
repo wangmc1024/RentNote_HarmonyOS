@@ -1,5 +1,6 @@
-import { UIAbility, Want, AbilityConstant } from '@kit.AbilityKit';
+import { UIAbility, Want, AbilityConstant, common } from '@kit.AbilityKit';
 import { window, AppStorageV2 } from '@kit.ArkUI';
+import { BusinessError } from '@kit.BasicServicesKit';
 import { PropertyRepository } from '../repository/PropertyRepository';
 import { WidgetNavigateState } from '../model/PropertyModel';
 
@@ -34,6 +35,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
+    this.setupImmersiveWindow(windowStage);
     windowStage.loadContent('pages/Index', (err, data) => {
       if (err.code) {
         console.error('[RentalTracker] Failed to load content: ' + JSON.stringify(err));
@@ -41,6 +43,28 @@ export default class EntryAbility extends UIAbility {
       }
       console.info('[RentalTracker] Succeeded in loading content: ' + JSON.stringify(data));
     });
+  }
+
+  /**
+   * 元服务系统栏适配（AGC审核"导航栏"检测项）：
+   * 开启沉浸式全屏布局，页面背景延伸至状态栏与导航条区域；
+   * 内容避让由 Index 根节点按避让区动态 padding 完成。
+   */
+  private setupImmersiveWindow(windowStage: window.WindowStage): void {
+    try {
+      const mainWindow: window.Window = windowStage.getMainWindowSync();
+      mainWindow.setWindowLayoutFullScreen(true).catch((err: BusinessError) => {
+        console.error('[RentalTracker] setWindowLayoutFullScreen failed: ' + JSON.stringify(err));
+      });
+      const barProps: window.SystemBarProperties = {
+        statusBarContentColor: '#0F1419'
+      };
+      mainWindow.setWindowSystemBarProperties(barProps).catch((err: BusinessError) => {
+        console.error('[RentalTracker] setWindowSystemBarProperties failed: ' + JSON.stringify(err));
+      });
+    } catch (error) {
+      console.error('[RentalTracker] setup immersive window failed: ' + JSON.stringify(error));
+    }
   }
 
   onWindowStageDestroy(): void {

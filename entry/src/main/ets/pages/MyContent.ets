@@ -42,7 +42,7 @@ export struct MyContent {
   }
 
   private async checkAgentSupport(): Promise<void> {
-    if (!AgentConfig.AGENT_ID.startsWith('agent_')) {
+    if (!AgentConfig.AGENT_ID.startsWith('agent')) {
       return;
     }
     if (!canIUse('SystemCapability.AI.Agent.AgentKit')) {
